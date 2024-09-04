@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Image And Info Pokemon Name
+// @name         Image Names
 // @namespace    http://tampermonkey.net/
 // @version      5.0.1
 // @description  Load Image Pokemon Name By HyperBeam and RenjiYuusei
@@ -10,6 +10,8 @@
 // @icon64       https://sangtacviet.vip/favicon.png
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @downloadURL https://update.greasyfork.org/scripts/502509/Image%20Names.user.js
+// @updateURL https://update.greasyfork.org/scripts/502509/Image%20Names.meta.js
 // @grant        GM_xmlhttpRequest
 // @connect      raw.githubusercontent.com
 // ==/UserScript==
@@ -28,6 +30,7 @@
 		borderRadius: '4px',
 		backgroundColor: '#fff',
 		display: 'none',
+        width: '300px',
 	};
 
 	function createNotificationBox() {
@@ -107,8 +110,8 @@
 		});
 	}
 
-	const pkmUrl = 'https://raw.githubusercontent.com/playrough/stv-pokemon-name/main/pokemon-data.json';
-	const moveUrl = 'https://raw.githubusercontent.com/playrough/stv-pokemon-name/main/move-pokemon.json';
+	const pkmUrl = 'https://raw.githubusercontent.com/playrough/stv-pokemon-name/main/pokemon-stats.json';
+	const moveUrl = 'https://raw.githubusercontent.com/playrough/stv-pokemon-name/main/pokemon-moves.json';
 
 	async function getPokemon() {
 		const pokemonJson = await fetchDataPokemon(pkmUrl);
