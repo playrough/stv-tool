@@ -15,6 +15,8 @@
 (function () {
     'use strict';
 
+
+
     // Image URLs for Items
     const imageURLs = {
         bachQuyen: "'https://i.postimg.cc/y6RvZGhG/bachquyen.png'",
@@ -86,7 +88,6 @@
         --text-grey: rgba(18, 18, 23, .6);
         --bg-item: #383e4d;
     }
-
 
     /*user item */
     .item {
@@ -412,4 +413,27 @@
     }`;
 
     GM_addStyle(css);
+
+    setTimeout(()=>{
+        const LEVEL = {
+            '6': 32,
+            '5': 16,
+            '4': 8
+        }
+
+        const items = document.querySelectorAll('.item[tag="2"][e="10"]');
+        const total = Array.from(items).reduce((total, item) => {
+            total += Number(item.getAttribute('n')) * LEVEL[item.getAttribute('l')];
+            return total;
+        }, 0);
+
+
+        const divs = document.querySelectorAll('div[style="font-size: 20px; margin: 10px 0px;"]');
+        const targetDiv = Array.from(divs).find(div => div.textContent.trim() === 'Đan dược');
+
+        if (targetDiv) {
+            targetDiv.textContent += ' || Điểm vận khí: ' + total;
+        }
+
+    }, 1000);
 })();
