@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Item STV
 // @namespace      sangtaviet
-// @version        2.0.1
+// @version        2.0.2
 // @description    Remake item for SangTacViet
 // @author         @HyperBeam & @Jann
 // @license        GPL-3.0
@@ -421,9 +421,10 @@
 
 		const calculateTotal = (selector, levels) => {
 			const items = document.querySelectorAll(selector);
+            console.log(items);
 			return Array.from(items).reduce((total, item) => {
 				const level = item.getAttribute('l');
-				const quantity = Number(item.getAttribute('n'));
+				const quantity = Number(item.getAttribute('n')) || 1;
 				return total + (quantity * levels[level] || 0);
 			}, 0);
 		};
