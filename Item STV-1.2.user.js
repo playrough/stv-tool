@@ -13,32 +13,32 @@
 // ==/UserScript==
 
 (function () {
-    'use strict';
+	'use strict';
 
-    // Image URLs for Items
-    const imageURLs = {
-        bachQuyen: "'https://i.postimg.cc/y6RvZGhG/bachquyen.png'",
-        lamQuyen: "'https://i.postimg.cc/T3t9xvGK/lamquyen.png'",
-        lenhBaiMoc: "'https://i.postimg.cc/PJbWFB2r/lenhbai.png'",
-        linhThach: "'https://i.postimg.cc/zvYw7Jwc/linhthach.png'",
-        thienVanDan: "'https://i.postimg.cc/yxK99Lsq/thienvan.png'",
-        tuLinhDan: "'https://i.postimg.cc/xT0M1p6M/tulinh.png'",
-        tuKhiDan: "'https://i.postimg.cc/8kdLDgmT/tukhi.png'",
-        tayTuyDan: "'https://i.postimg.cc/50LL6hcq/taytuy.png'",
-        thiepBia: "'https://i.postimg.cc/2yxWxnS1/thiep.png'",
-        itemKim: "'https://i.postimg.cc/wxDQvmg8/kim.png'",
-        itemMoc: "'https://i.postimg.cc/4x2zMvbt/moc.png'",
-        itemThuy: "'https://i.postimg.cc/7ZhzgG8L/thuy.png'",
-        itemHoa: "'https://i.postimg.cc/Qd8bvdLL/hoa.png'",
-        itemTho: "'https://i.postimg.cc/9FJTRPkS/tho.png'",
-        itemPhong: "'https://i.postimg.cc/s2BpRBwL/phong.png'",
-        itemLoi: "'https://i.postimg.cc/Z558Vs34/loi.png'",
-        itemBang: "'https://i.postimg.cc/SN7dZzv7/bang.png'",
-        itemQuang: "'https://i.postimg.cc/q792BkFv/quang.png'",
-        itemAm: "'https://i.postimg.cc/VLc4BFDk/am.png'",
-    };
+	// Image URLs for Items
+	const imageURLs = {
+		bachQuyen: "'https://i.postimg.cc/y6RvZGhG/bachquyen.png'",
+		lamQuyen: "'https://i.postimg.cc/T3t9xvGK/lamquyen.png'",
+		lenhBaiMoc: "'https://i.postimg.cc/PJbWFB2r/lenhbai.png'",
+		linhThach: "'https://i.postimg.cc/zvYw7Jwc/linhthach.png'",
+		thienVanDan: "'https://i.postimg.cc/yxK99Lsq/thienvan.png'",
+		tuLinhDan: "'https://i.postimg.cc/xT0M1p6M/tulinh.png'",
+		tuKhiDan: "'https://i.postimg.cc/8kdLDgmT/tukhi.png'",
+		tayTuyDan: "'https://i.postimg.cc/50LL6hcq/taytuy.png'",
+		thiepBia: "'https://i.postimg.cc/2yxWxnS1/thiep.png'",
+		itemKim: "'https://i.postimg.cc/wxDQvmg8/kim.png'",
+		itemMoc: "'https://i.postimg.cc/4x2zMvbt/moc.png'",
+		itemThuy: "'https://i.postimg.cc/7ZhzgG8L/thuy.png'",
+		itemHoa: "'https://i.postimg.cc/Qd8bvdLL/hoa.png'",
+		itemTho: "'https://i.postimg.cc/9FJTRPkS/tho.png'",
+		itemPhong: "'https://i.postimg.cc/s2BpRBwL/phong.png'",
+		itemLoi: "'https://i.postimg.cc/Z558Vs34/loi.png'",
+		itemBang: "'https://i.postimg.cc/SN7dZzv7/bang.png'",
+		itemQuang: "'https://i.postimg.cc/q792BkFv/quang.png'",
+		itemAm: "'https://i.postimg.cc/VLc4BFDk/am.png'",
+	};
 
-    const css = `
+	const css = `
         :root {
 
             /* Item Settings */
@@ -410,46 +410,49 @@
             left: 14% !important;
         }`;
 
-    GM_addStyle(css);
+	GM_addStyle(css);
 
-    const observer = new MutationObserver(mutations => {
-        const tuLinhDanList = document.querySelectorAll('.item[tag="2"][e="2"]');
-        const thienVanDanList = document.querySelectorAll('.item[tag="2"][e="10"]');
+	const observer = new MutationObserver(mutations => {
+		const tuLinhDanList = document.querySelectorAll('.item[tag="2"][e="2"]');
+		const thienVanDanList = document.querySelectorAll('.item[tag="2"][e="10"]');
 
-        if (tuLinhDanList.length > 0 && thienVanDanList.length > 0) {
-            const LEVELS = {
-                TU_LINH: { 6: 64, 5: 32, 4: 16 },
-                THIEN_VAN: { 6: 32, 5: 16, 4: 8 },
-            };
+		if (tuLinhDanList.length > 0 && thienVanDanList.length > 0) {
+			const LEVELS = {
+				TU_KHI: { 6: 100000, 5: 10000, 4: 1000 },
+				TU_LINH: { 6: 64, 5: 32, 4: 16 },
+				THIEN_VAN: { 6: 32, 5: 16, 4: 8 },
+			};
 
-            const calculateTotal = (selector, levels) => {
-                const items = document.querySelectorAll(selector);
-                return Array.from(items).reduce((total, item) => {
-                    const level = item.getAttribute('l');
-                    const quantity = Number(item.getAttribute('n'));
-                    return total + (quantity * levels[level] || 0);
-                }, 0);
-            };
+			const calculateTotal = (selector, levels) => {
+				const items = document.querySelectorAll(selector);
+				return Array.from(items).reduce((total, item) => {
+					const level = item.getAttribute('l');
+					const quantity = Number(item.getAttribute('n'));
+					return total + (quantity * levels[level] || 0);
+				}, 0);
+			};
 
-            const tuLinhDanTotal = calculateTotal('.item[tag="2"][e="2"]', LEVELS.TU_LINH);
-            const thienVanDanTotal = calculateTotal('.item[tag="2"][e="10"]', LEVELS.THIEN_VAN);
+			const tuKhiDanTotal = calculateTotal('.item[tag="2"][e="1"]', LEVELS.TU_KHI);
+			const tuLinhDanTotal = calculateTotal('.item[tag="2"][e="2"]', LEVELS.TU_LINH);
+			const thienVanDanTotal = calculateTotal('.item[tag="2"][e="10"]', LEVELS.THIEN_VAN);
 
-            const targetDiv = Array.from(
-                document.querySelectorAll('div[style="font-size: 20px; margin: 10px 0px;"]')
-            ).find(div => div.textContent.trim() === 'Đan dược');
+			const targetDiv = Array.from(
+				document.querySelectorAll('div[style="font-size: 20px; margin: 10px 0px;"]')
+			).find(div => div.textContent.trim() === 'Đan dược');
 
-            if (targetDiv) {
-                targetDiv.innerHTML += /* HTML */ `
+			if (targetDiv) {
+				targetDiv.innerHTML += /* HTML */ `
 					<ul class="custom-list">
+						<li>Điểm Tụ Khí - ${tuKhiDanTotal}</li>
 						<li>Điểm Tụ Linh - ${tuLinhDanTotal}%</li>
 						<li>Điểm Thiên Vận - ${thienVanDanTotal}</li>
 					</ul>
 				`;
-            }
-        }
-    });
+			}
+		}
+	});
 
-    const css2 = `
+	const css2 = `
         .custom-list {
             list-style-type: none; /* Ẩn dấu chấm đầu dòng */
             padding: 10px 0 0 15px; /* Bỏ padding */
@@ -459,10 +462,10 @@
             font-size: 16px;
         }
     `;
-    GM_addStyle(css2);
+	GM_addStyle(css2);
 
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-    });
+	observer.observe(document.body, {
+		childList: true,
+		subtree: true,
+	});
 })();
