@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Item STV
 // @namespace      sangtaviet
-// @version        2.0
+// @version        2.0.1
 // @description    Remake item for SangTacViet
 // @author         @HyperBeam & @Jann
 // @license        GPL-3.0
@@ -413,42 +413,37 @@
 	GM_addStyle(css);
 
 	const observer = new MutationObserver(mutations => {
-		const tuLinhDanList = document.querySelectorAll('.item[tag="2"][e="2"]');
-		const thienVanDanList = document.querySelectorAll('.item[tag="2"][e="10"]');
+		const LEVELS = {
+			TU_KHI: { 6: 100000, 5: 10000, 4: 1000 },
+			TU_LINH: { 6: 64, 5: 32, 4: 16 },
+			THIEN_VAN: { 6: 32, 5: 16, 4: 8 },
+		};
 
-		if (tuLinhDanList.length > 0 && thienVanDanList.length > 0) {
-			const LEVELS = {
-				TU_KHI: { 6: 100000, 5: 10000, 4: 1000 },
-				TU_LINH: { 6: 64, 5: 32, 4: 16 },
-				THIEN_VAN: { 6: 32, 5: 16, 4: 8 },
-			};
+		const calculateTotal = (selector, levels) => {
+			const items = document.querySelectorAll(selector);
+			return Array.from(items).reduce((total, item) => {
+				const level = item.getAttribute('l');
+				const quantity = Number(item.getAttribute('n'));
+				return total + (quantity * levels[level] || 0);
+			}, 0);
+		};
 
-			const calculateTotal = (selector, levels) => {
-				const items = document.querySelectorAll(selector);
-				return Array.from(items).reduce((total, item) => {
-					const level = item.getAttribute('l');
-					const quantity = Number(item.getAttribute('n'));
-					return total + (quantity * levels[level] || 0);
-				}, 0);
-			};
+		const tuKhiDanTotal = calculateTotal('.item[tag="2"][e="1"]', LEVELS.TU_KHI);
+		const tuLinhDanTotal = calculateTotal('.item[tag="2"][e="2"]', LEVELS.TU_LINH);
+		const thienVanDanTotal = calculateTotal('.item[tag="2"][e="10"]', LEVELS.THIEN_VAN);
 
-			const tuKhiDanTotal = calculateTotal('.item[tag="2"][e="1"]', LEVELS.TU_KHI);
-			const tuLinhDanTotal = calculateTotal('.item[tag="2"][e="2"]', LEVELS.TU_LINH);
-			const thienVanDanTotal = calculateTotal('.item[tag="2"][e="10"]', LEVELS.THIEN_VAN);
+		const targetDiv = Array.from(document.querySelectorAll('div[style="font-size: 20px; margin: 10px 0px;"]')).find(
+			div => div.textContent.trim() === 'Đan dược'
+		);
 
-			const targetDiv = Array.from(
-				document.querySelectorAll('div[style="font-size: 20px; margin: 10px 0px;"]')
-			).find(div => div.textContent.trim() === 'Đan dược');
-
-			if (targetDiv) {
-				targetDiv.innerHTML += /* HTML */ `
-					<ul class="custom-list">
-						<li>Điểm Tụ Khí - ${tuKhiDanTotal}</li>
-						<li>Điểm Tụ Linh - ${tuLinhDanTotal}%</li>
-						<li>Điểm Thiên Vận - ${thienVanDanTotal}</li>
-					</ul>
-				`;
-			}
+		if (targetDiv) {
+			targetDiv.innerHTML += /* HTML */ `
+				<ul class="custom-list">
+					<li>Điểm Tụ Khí - ${tuKhiDanTotal}</li>
+					<li>Điểm Tụ Linh - ${tuLinhDanTotal}%</li>
+					<li>Điểm Thiên Vận - ${thienVanDanTotal}</li>
+				</ul>
+			`;
 		}
 	});
 
