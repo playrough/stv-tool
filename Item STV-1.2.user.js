@@ -483,13 +483,13 @@
 		updateStatBox(
 			'Đan dược',
 			`
-      <li>Tụ Khí - <strong style="color: #298dd4">${formatNumber(totals.tuKhi)}</strong> Tu Vi</li>
-      <li>Tụ Linh - <strong style="color: #d53f42">${formatNumber(totals.tuLinh)}</strong> % Tốc Độ Hấp Thu</li>
-      <li>Thiên Vận - <strong style="color: #fcac05">${formatNumber(totals.thienVan)}</strong> Vận Khí</li>
+      <li>Tụ Khí + <strong style="color: #298dd4">${formatNumber(totals.tuKhi)}</strong> Tu Vi</li>
+      <li>Tụ Linh + <strong style="color: #d53f42">${formatNumber(totals.tuLinh)}</strong> % Tốc Độ Hấp Thu</li>
+      <li>Thiên Vận + <strong style="color: #fcac05">${formatNumber(totals.thienVan)}</strong> Vận Khí</li>
     `
 		);
 
-		updateStatBox('Linh thạch', `<li>Linh Thạch - <strong style="color: #298dd4">${formatNumber(totals.linhThach)}</strong> Tu Vi</li>`);
+		updateStatBox('Linh thạch', `<li>Linh Thạch + <strong style="color: #298dd4">${formatNumber(totals.linhThach)}</strong> Tu Vi</li>`);
 	});
 
 	// Initialize observer
