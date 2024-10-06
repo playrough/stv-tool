@@ -412,55 +412,134 @@
 
 	GM_addStyle(css);
 
-	const observer = new MutationObserver(mutations => {
-		const LEVELS = {
-			TU_KHI: { 6: 100000, 5: 10000, 4: 1000 },
-			TU_LINH: { 6: 64, 5: 32, 4: 16 },
-			THIEN_VAN: { 6: 32, 5: 16, 4: 8 },
-		};
+	// Constants
+	const LEVELS = {
+		TU_KHI: { 6: 100000, 5: 10000, 4: 1000 },
+		TU_LINH: { 6: 64, 5: 32, 4: 16 },
+		THIEN_VAN: { 6: 32, 5: 16, 4: 8 },
+	};
 
-		const calculateTotal = (selector, levels) => {
-			const items = document.querySelectorAll(`#tuitruvat ${selector}`);
-			return Array.from(items).reduce((total, item) => {
-				const level = item.getAttribute('l');
-				const quantity = Number(item.getAttribute('n')) || 1;
-				return total + (quantity * levels[level] || 0);
-			}, 0);
-		};
+	// Utility functions
+	const formatNumber = number => number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-		const tuKhiDanTotal = calculateTotal('.item[tag="2"][e="1"]', LEVELS.TU_KHI);
-		const tuLinhDanTotal = calculateTotal('.item[tag="2"][e="2"]', LEVELS.TU_LINH);
-		const thienVanDanTotal = calculateTotal('.item[tag="2"][e="10"]', LEVELS.THIEN_VAN);
+	const calculateTimeToBreakthrough = (valueMax, valueNow, speed) => {
+		const totalMinutes = (valueMax - valueNow) / speed;
+		const days = Math.floor(totalMinutes / (60 * 24));
+		const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+		const minutes = Math.floor(totalMinutes % 60);
+		const seconds = Math.round((totalMinutes % 1) * 60);
 
-		const targetDiv = Array.from(document.querySelectorAll('div[style="font-size: 20px; margin: 10px 0px;"]')).find(
-			div => div.textContent.trim() === 'Đan dược'
-		);
+		return `${days} ngày, ${hours} giờ, ${minutes} phút, ${seconds} giây`;
+	};
+
+	// Item calculation functions
+	const calculateItems = (selector, calculator) => {
+		const items = document.querySelectorAll(`#tuitruvat ${selector}`);
+		return Array.from(items).reduce((total, item) => {
+			const level = parseInt(item.getAttribute('l'));
+			const quantity = parseInt(item.getAttribute('n')) || 1;
+			return total + calculator(level, quantity);
+		}, 0);
+	};
+
+	const calculateByLevel = levels => (level, quantity) => quantity * (levels[level] || 0);
+	const calculateLinhThach = (level, quantity) => quantity * level * 50;
+
+	// UI update functions
+	const updateStatBox = (title, content) => {
+		const targetDiv = Array.from(document.querySelectorAll('div[style="font-size: 20px; margin: 10px 0px;"]')).find(div => div.textContent.trim() === title);
 
 		if (targetDiv) {
-			targetDiv.innerHTML += /* HTML */ `
-				<ul class="custom-list">
-					<li>Điểm Tụ Khí - ${tuKhiDanTotal}</li>
-					<li>Điểm Tụ Linh - ${tuLinhDanTotal}%</li>
-					<li>Điểm Thiên Vận - ${thienVanDanTotal}</li>
-				</ul>
-			`;
+			targetDiv.innerHTML += `
+        <ul class="custom-list">
+          ${content}
+        </ul>
+      `;
 		}
+	};
+
+	const updateProgressBar = progressDiv => {
+		const formattedNumber = formatNumber(progressDiv.innerText);
+		progressDiv.innerText = '';
+		progressDiv.parentElement.style.position = 'relative';
+		progressDiv.parentElement.innerHTML += `
+      <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; text-align: center">
+        ${formattedNumber}
+      </span>
+    `;
+	};
+
+	// Main observer function
+	const observer = new MutationObserver(() => {
+		// Calculate totals
+		const totals = {
+			linhThach: calculateItems('.item[tag="1"]', calculateLinhThach),
+			tuKhi: calculateItems('.item[tag="2"][e="1"]', calculateByLevel(LEVELS.TU_KHI)),
+			tuLinh: calculateItems('.item[tag="2"][e="2"]', calculateByLevel(LEVELS.TU_LINH)),
+			thienVan: calculateItems('.item[tag="2"][e="10"]', calculateByLevel(LEVELS.THIEN_VAN)),
+		};
+
+		// Update UI
+		updateStatBox(
+			'Đan dược',
+			`
+      <li>Tụ Khí - <strong style="color: #298dd4">${formatNumber(totals.tuKhi)}</strong> Tu Vi</li>
+      <li>Tụ Linh - <strong style="color: #d53f42">${formatNumber(totals.tuLinh)}</strong> % Tốc Độ Hấp Thu</li>
+      <li>Thiên Vận - <strong style="color: #fcac05">${formatNumber(totals.thienVan)}</strong> Vận Khí</li>
+    `
+		);
+
+		updateStatBox('Linh thạch', `<li>Linh Thạch - <strong style="color: #298dd4">${formatNumber(totals.linhThach)}</strong> Tu Vi</li>`);
 	});
 
-	const css2 = `
-        .custom-list {
-            list-style-type: none; /* Ẩn dấu chấm đầu dòng */
-            padding: 10px 0 0 15px; /* Bỏ padding */
-        }
+	// Initialize observer
+	observer.observe(document.body, { childList: true, subtree: true });
 
-        .custom-list li {
-            font-size: 16px;
-        }
-    `;
+	// Add styles
+	const css2 = `
+    .custom-list {
+      list-style-type: none;
+      padding: 10px 0 0 15px;
+    }
+    .custom-list li {
+      font-size: 16px;
+    }
+    #content-container {
+      max-width: 100%;
+    }
+  `;
 	GM_addStyle(css2);
 
-	observer.observe(document.body, {
-		childList: true,
-		subtree: true,
-	});
+	// Update cultivation speed display
+	const updateCultiSpeed = () => {
+		const cultiSpeedElement = document.querySelector('.user-culti-speed');
+		const speedMatch = cultiSpeedElement.innerText.match(/\+(\d+)/);
+		cultiSpeedElement.innerHTML += `<br><span>${cultiSpeedElement.title.replace(/\*/g, 'x')}</span>`;
+
+		if (!speedMatch) return;
+
+		const speed = parseInt(speedMatch[1]);
+		const titles = document.querySelectorAll('.stat-title');
+
+		titles.forEach(title => {
+			if (!['Tu vi', 'Căn cơ'].includes(title.innerText.trim())) return;
+
+			const progressDiv = title.closest('.stat-box').querySelector('.progress .progress-bar');
+			updateProgressBar(progressDiv);
+
+			if (title.innerText.trim() === 'Tu vi') {
+				const valueMax = parseInt(progressDiv.getAttribute('aria-valuemax'));
+				const valueNow = parseInt(progressDiv.getAttribute('aria-valuenow'));
+				const remaining = valueMax - valueNow;
+
+				cultiSpeedElement.innerHTML += `
+          <br><span>Cần: ${formatNumber(remaining)} tu vi để đột phá</span>
+          <br><span>Còn lại: ${calculateTimeToBreakthrough(valueMax, valueNow, speed)}</span>
+        `;
+			}
+		});
+	};
+
+	// Initialize cultivation speed display
+	updateCultiSpeed();
 })();
