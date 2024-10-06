@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Item STV
 // @namespace      sangtaviet
-// @version        2.0.5
+// @version        3.0.5
 // @description    Remake item for SangTacViet
 // @author         @HyperBeam & @Jann
 // @license        GPL-3.0
