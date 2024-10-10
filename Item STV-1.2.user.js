@@ -1,44 +1,44 @@
 // ==UserScript==
 // @name           Item STV
 // @namespace      sangtaviet
-// @version        3.0.5
+// @version        4.0
 // @description    Remake item for SangTacViet
 // @author         @HyperBeam & @Jann
 // @license        GPL-3.0
 // @icon64         https://sangtacviet.vip/favicon.png
-// @match          *://sangtacviet.vip/*
+// @match          *://sangtacviet.vip/user/*
 // @grant          GM_addStyle
 // @downloadURL https://update.greasyfork.org/scripts/503629/Item%20STV.user.js
 // @updateURL https://update.greasyfork.org/scripts/503629/Item%20STV.meta.js
 // ==/UserScript==
 
-(function () {
-	'use strict';
+(function() {
+    'use strict';
 
-	// Image URLs for Items
-	const imageURLs = {
-		bachQuyen: "'https://i.postimg.cc/y6RvZGhG/bachquyen.png'",
-		lamQuyen: "'https://i.postimg.cc/T3t9xvGK/lamquyen.png'",
-		lenhBaiMoc: "'https://i.postimg.cc/PJbWFB2r/lenhbai.png'",
-		linhThach: "'https://i.postimg.cc/zvYw7Jwc/linhthach.png'",
-		thienVanDan: "'https://i.postimg.cc/yxK99Lsq/thienvan.png'",
-		tuLinhDan: "'https://i.postimg.cc/xT0M1p6M/tulinh.png'",
-		tuKhiDan: "'https://i.postimg.cc/8kdLDgmT/tukhi.png'",
-		tayTuyDan: "'https://i.postimg.cc/50LL6hcq/taytuy.png'",
-		thiepBia: "'https://i.postimg.cc/2yxWxnS1/thiep.png'",
-		itemKim: "'https://i.postimg.cc/wxDQvmg8/kim.png'",
-		itemMoc: "'https://i.postimg.cc/4x2zMvbt/moc.png'",
-		itemThuy: "'https://i.postimg.cc/7ZhzgG8L/thuy.png'",
-		itemHoa: "'https://i.postimg.cc/Qd8bvdLL/hoa.png'",
-		itemTho: "'https://i.postimg.cc/9FJTRPkS/tho.png'",
-		itemPhong: "'https://i.postimg.cc/s2BpRBwL/phong.png'",
-		itemLoi: "'https://i.postimg.cc/Z558Vs34/loi.png'",
-		itemBang: "'https://i.postimg.cc/SN7dZzv7/bang.png'",
-		itemQuang: "'https://i.postimg.cc/q792BkFv/quang.png'",
-		itemAm: "'https://i.postimg.cc/VLc4BFDk/am.png'",
-	};
+    // Image URLs for Items
+    const imageURLs = {
+        bachQuyen: "'https://i.postimg.cc/y6RvZGhG/bachquyen.png'",
+        lamQuyen: "'https://i.postimg.cc/T3t9xvGK/lamquyen.png'",
+        lenhBaiMoc: "'https://i.postimg.cc/PJbWFB2r/lenhbai.png'",
+        linhThach: "'https://i.postimg.cc/zvYw7Jwc/linhthach.png'",
+        thienVanDan: "'https://i.postimg.cc/yxK99Lsq/thienvan.png'",
+        tuLinhDan: "'https://i.postimg.cc/xT0M1p6M/tulinh.png'",
+        tuKhiDan: "'https://i.postimg.cc/8kdLDgmT/tukhi.png'",
+        tayTuyDan: "'https://i.postimg.cc/50LL6hcq/taytuy.png'",
+        thiepBia: "'https://i.postimg.cc/2yxWxnS1/thiep.png'",
+        itemKim: "'https://i.postimg.cc/wxDQvmg8/kim.png'",
+        itemMoc: "'https://i.postimg.cc/4x2zMvbt/moc.png'",
+        itemThuy: "'https://i.postimg.cc/7ZhzgG8L/thuy.png'",
+        itemHoa: "'https://i.postimg.cc/Qd8bvdLL/hoa.png'",
+        itemTho: "'https://i.postimg.cc/9FJTRPkS/tho.png'",
+        itemPhong: "'https://i.postimg.cc/s2BpRBwL/phong.png'",
+        itemLoi: "'https://i.postimg.cc/Z558Vs34/loi.png'",
+        itemBang: "'https://i.postimg.cc/SN7dZzv7/bang.png'",
+        itemQuang: "'https://i.postimg.cc/q792BkFv/quang.png'",
+        itemAm: "'https://i.postimg.cc/VLc4BFDk/am.png'",
+    };
 
-	const css = `
+    const css = `
         :root {
 
             /* Item Settings */
@@ -410,136 +410,151 @@
             left: 14% !important;
         }`;
 
-	GM_addStyle(css);
+    GM_addStyle(css);
 
-	// Constants
-	const LEVELS = {
-		TU_KHI: { 6: 100000, 5: 10000, 4: 1000 },
-		TU_LINH: { 6: 64, 5: 32, 4: 16 },
-		THIEN_VAN: { 6: 32, 5: 16, 4: 8 },
-	};
+    // Constants
+    const LEVELS = {
+        TU_KHI: { 6: 100000, 5: 10000, 4: 1000 },
+        TU_LINH: { 6: 64, 5: 32, 4: 16 },
+        THIEN_VAN: { 6: 32, 5: 16, 4: 8 },
+    };
 
-	// Utility functions
-	const formatNumber = number => number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    // Utility functions
+    const formatNumber = number => number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-	const calculateTimeToBreakthrough = (valueMax, valueNow, speed) => {
-		const totalMinutes = (valueMax - valueNow) / speed;
-		const days = Math.floor(totalMinutes / (60 * 24));
-		const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-		const minutes = Math.floor(totalMinutes % 60);
-		const seconds = Math.round((totalMinutes % 1) * 60);
+    const calculateTimeToBreakthrough = (valueMax, valueNow, speed) => {
+        const totalMinutes = (valueMax - valueNow) / speed;
+        const days = Math.floor(totalMinutes / (60 * 24));
+        const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+        const minutes = Math.floor(totalMinutes % 60);
+        const seconds = Math.round((totalMinutes % 1) * 60);
 
-		return `${days} ngày, ${hours} giờ, ${minutes} phút, ${seconds} giây`;
-	};
+        return `${days} ngày, ${hours} giờ, ${minutes} phút, ${seconds} giây`;
+    };
 
-	// Item calculation functions
-	const calculateItems = (selector, calculator) => {
-		const items = document.querySelectorAll(`#tuitruvat ${selector}`);
-		return Array.from(items).reduce((total, item) => {
-			const level = parseInt(item.getAttribute('l'));
-			const quantity = parseInt(item.getAttribute('n')) || 1;
-			return total + calculator(level, quantity);
-		}, 0);
-	};
+    // Item calculation functions
+    const countScroll = (selector) => {
+        const items = document.querySelectorAll(`#tuitruvat ${selector}`);
+        return items.length;
+    };
 
-	const calculateByLevel = levels => (level, quantity) => quantity * (levels[level] || 0);
-	const calculateLinhThach = (level, quantity) => quantity * level * 50;
+    const calculateItems = (selector, calculator) => {
+        const items = document.querySelectorAll(`#tuitruvat ${selector}`);
+        return Array.from(items).reduce((total, item) => {
+            const level = parseInt(item.getAttribute('l'));
+            const quantity = parseInt(item.getAttribute('n')) || 1;
+            return total + calculator(level, quantity);
+        }, 0);
+    };
 
-	// UI update functions
-	const updateStatBox = (title, content) => {
-		const targetDiv = Array.from(document.querySelectorAll('div[style="font-size: 20px; margin: 10px 0px;"]')).find(div => div.textContent.trim() === title);
+    const calculateByLevel = levels => (level, quantity) => quantity * (levels[level] || 0);
+    const calculateLinhThach = (level, quantity) => quantity * level * 50;
 
-		if (targetDiv) {
-			targetDiv.innerHTML += `
-        <ul class="custom-list">
-          ${content}
-        </ul>
-      `;
-		}
-	};
+    // UI update functions
+    const updateStatBox = (title, content) => {
+        const targetDiv = Array.from(document.querySelectorAll('div[style="font-size: 20px; margin: 10px 0px;"]')).find(div => div.textContent.trim() === title);
 
-	const updateProgressBar = progressDiv => {
-		const formattedNumber = formatNumber(progressDiv.innerText);
-		progressDiv.innerText = '';
-		progressDiv.parentElement.style.position = 'relative';
-		progressDiv.parentElement.innerHTML += `
-      <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; text-align: center">
-        ${formattedNumber}
-      </span>
-    `;
-	};
+        if (targetDiv) {
+            targetDiv.innerHTML += `
+                <ul class="custom-list">
+                    ${content}
+                </ul>
+            `;
+        }
+    };
 
-	// Main observer function
-	const observer = new MutationObserver(() => {
-		// Calculate totals
-		const totals = {
-			linhThach: calculateItems('.item[tag="1"]', calculateLinhThach),
-			tuKhi: calculateItems('.item[tag="2"][e="1"]', calculateByLevel(LEVELS.TU_KHI)),
-			tuLinh: calculateItems('.item[tag="2"][e="2"]', calculateByLevel(LEVELS.TU_LINH)),
-			thienVan: calculateItems('.item[tag="2"][e="10"]', calculateByLevel(LEVELS.THIEN_VAN)),
-		};
-
-		// Update UI
-		updateStatBox(
-			'Đan dược',
-			`
-      <li>Tụ Khí + <strong style="color: #298dd4">${formatNumber(totals.tuKhi)}</strong> Tu Vi</li>
-      <li>Tụ Linh + <strong style="color: #d53f42">${formatNumber(totals.tuLinh)}</strong> % Tốc Độ Hấp Thu</li>
-      <li>Thiên Vận + <strong style="color: #fcac05">${formatNumber(totals.thienVan)}</strong> Vận Khí</li>
-    `
-		);
-
-		updateStatBox('Linh thạch', `<li>Linh Thạch + <strong style="color: #298dd4">${formatNumber(totals.linhThach)}</strong> Tu Vi</li>`);
-	});
-
-	// Initialize observer
-	observer.observe(document.body, { childList: true, subtree: true });
-
-	// Add styles
-	const css2 = `
-    .custom-list {
-      list-style-type: none;
-      padding: 10px 0 0 15px;
-    }
-    .custom-list li {
-      font-size: 16px;
-    }
-    #content-container {
-      max-width: 100%;
-    }
-  `;
-	GM_addStyle(css2);
-
-	// Update cultivation speed display
-	const updateCultiSpeed = () => {
-		const cultiSpeedElement = document.querySelector('.user-culti-speed');
-		const speedMatch = cultiSpeedElement.innerText.match(/\+(\d+)/);
-		cultiSpeedElement.innerHTML += `<br><span>${cultiSpeedElement.title.replace(/\*/g, 'x')}</span>`;
-
-		if (!speedMatch) return;
-
-		const speed = parseInt(speedMatch[1]);
-		const titles = document.querySelectorAll('.stat-title');
-
-		titles.forEach(title => {
-			if (!['Tu vi', 'Căn cơ'].includes(title.innerText.trim())) return;
-
-			const progressDiv = title.closest('.stat-box').querySelector('.progress .progress-bar');
-			updateProgressBar(progressDiv);
-
-			if (title.innerText.trim() === 'Tu vi') {
-				const valueMax = parseInt(progressDiv.getAttribute('aria-valuemax'));
-				const valueNow = parseInt(progressDiv.getAttribute('aria-valuenow'));
-				const remaining = valueMax - valueNow;
-
-				cultiSpeedElement.innerHTML += `
-          <br><span>Cần: ${formatNumber(remaining)} tu vi để đột phá</span>
-          <br><span>Còn lại: ${calculateTimeToBreakthrough(valueMax, valueNow, speed)}</span>
+    const updateProgressBar = progressDiv => {
+        const formattedNumber = formatNumber(progressDiv.innerText);
+        progressDiv.innerText = '';
+        progressDiv.parentElement.style.position = 'relative';
+        progressDiv.parentElement.innerHTML += `
+            <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; text-align: center">
+                ${formattedNumber}
+            </span>
         `;
-			}
-		});
-	};
+    };
 
-	// Initialize cultivation speed display
-	updateCultiSpeed();
+    // Main observer function
+    const observer = new MutationObserver(() => {
+        // Calculate totals
+        const totals = {
+            linhThach: calculateItems('.item[tag="1"]', calculateLinhThach),
+            tuKhi: calculateItems('.item[tag="2"][e="1"]', calculateByLevel(LEVELS.TU_KHI)),
+            tuLinh: calculateItems('.item[tag="2"][e="2"]', calculateByLevel(LEVELS.TU_LINH)),
+            thienVan: calculateItems('.item[tag="2"][e="10"]', calculateByLevel(LEVELS.THIEN_VAN)),
+            cp: countScroll('.item[tag="3"][ac="false"]'),
+            vk: countScroll('.item[tag="4"][ac="false"]'),
+        };
+
+        // Update UI
+        updateStatBox('Công pháp', `
+            <li>Tổng + <strong>${formatNumber(totals.cp)}</strong></li>
+        `);
+        updateStatBox('Võ kỹ', `
+            <li>Tổng + <strong>${formatNumber(totals.vk)}</strong></li>
+        `);
+        updateStatBox('Đan dược', `
+            <li>Tu Vi + <strong style="color: #298dd4">${formatNumber(totals.tuKhi)}</strong></li>
+            <li>Buff + <strong style="color: #d53f42">${formatNumber(totals.tuLinh / 100)}</strong></li>
+            <li>Vận Khí + <strong style="color: #fcac05">${formatNumber(totals.thienVan)}</strong></li>
+        `);
+        updateStatBox('Linh thạch', `
+            <li>Tu Vi + <strong style="color: #298dd4">${formatNumber(totals.linhThach)}</strong></li>
+        `);
+    });
+
+    // Initialize observer
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Add styles
+    const css2 = `
+        .custom-list {
+            list-style-type: none;
+            padding: 10px 0 0 15px;
+        }
+        .custom-list li {
+            font-size: 16px;
+        }
+        #content-container {
+            max-width: 100%;
+        }
+    `;
+    GM_addStyle(css2);
+
+    // Update cultivation speed display
+    const updateCultiSpeed = () => {
+        const cultiSpeedElement = document.querySelector('.user-culti-speed');
+        const numbers = cultiSpeedElement.title.match(/\d+\.?\d*/g);
+        const speedMatch = cultiSpeedElement.innerText.match(/\+(\d+)/);
+        const speed = parseInt(speedMatch[1]);
+
+        cultiSpeedElement.innerHTML = `<span>Tốc độ tu luyện: <b style="color: #298dd4">${formatNumber(speed)}</b> tu vi/phút</span>
+                                       <br><span>Cơ bản: <b style="color: #298dd4">${numbers[0]}</b></span>
+                                       <br><span>Buff: x <b style="color: #d53f42">${numbers[1]}</b></span>
+                                       <br><span>Căn cơ: x <b style="color: #53bd5a">${numbers[2]}</b></span>
+                                       `;
+
+        const titles = document.querySelectorAll('.stat-title');
+
+        titles.forEach(title => {
+            if (!['Tu vi', 'Căn cơ'].includes(title.innerText.trim())) return;
+
+            const progressDiv = title.closest('.stat-box').querySelector('.progress .progress-bar');
+            updateProgressBar(progressDiv);
+
+            if (title.innerText.trim() === 'Tu vi') {
+                const valueMax = parseInt(progressDiv.getAttribute('aria-valuemax'));
+                const valueNow = parseInt(progressDiv.getAttribute('aria-valuenow'));
+                const remaining = valueMax - valueNow;
+
+                cultiSpeedElement.innerHTML += `
+                    <br><span>Đột phá cần: <b style="color: #298dd4">${formatNumber(remaining)}</b></span>
+                    <br><span>Thời gian đột phá: ${calculateTimeToBreakthrough(valueMax, valueNow, speed)}</span>
+                `;
+            }
+        });
+    };
+
+    // Initialize cultivation speed display
+    updateCultiSpeed();
 })();
