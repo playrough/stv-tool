@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SangTacViet Producer No Darkmode
 // @namespace      sangtacviet
-// @version        1.2
+// @version        2.0
 // @description    Combines Item STV, Dark STV, and Auto Collect userscripts.
 // @author         @Undefined & @Yuusei
 // @license        GPL-3.0
