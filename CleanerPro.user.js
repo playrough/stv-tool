@@ -9,7 +9,7 @@
 // @match       *://14.225.254.182/truyen/*
 // @icon        https://i.ibb.co/mVNM0Ms4/419660.png
 // @version     1.5
-// @author      playrough
+// @author      @playrough
 // @description Clean and format text
 // @grant       GM_addStyle
 // @run-at      document-start
@@ -50,7 +50,8 @@
             configBox: "#configBox",
             settingBtn: "#btnshowns",
             highlightBtn: "#highlightBtn",
-            settingIcon: ".fa-cogs.fas"
+            settingIcon: ".fa-cogs.fas",
+            fontSelect: "selfont"
         };
 
         static CLASSNAME = {
@@ -60,8 +61,84 @@
         static FONTS = {
             nunitoSans: {
                 name: "Nunito Sans",
+                value: "nunitosans",
                 import: "Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000"
-            }
+            },
+            merriweather: {
+                name: "Merriweather",
+                value: "merriweather",
+                import: "Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900"
+            },
+            firaSans: {
+                name: "Fira Sans",
+                value: "firasans",
+                import: "Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900"
+            },
+            literata: {
+                name: "Literata",
+                value: "literata",
+                import: "Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900"
+            },
+            lexend: {
+                name: "Lexend",
+                value: "lexend",
+                import: "Lexend:wght@100..900"
+            },
+            spectral: {
+                name: "Spectral",
+                value: "spectral",
+                import: "Spectral:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800"
+            },
+            bitter: {
+                name: "Bitter",
+                value: "bitter",
+                import: "Bitter:ital,wght@0,100..900;1,100..900"
+            },
+            barlow: {
+                name: "Barlow",
+                value: "barlow",
+                import: "Barlow:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900"
+            },
+            inter: {
+                name: "Inter",
+                value: "inter",
+                import: "Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900"
+            },
+            manrope: {
+                name: "Manrope",
+                value: "manrope",
+                import: "Manrope:wght@200..800"
+            },
+            raleway: {
+                name: "Raleway",
+                value: "raleway",
+                import: "Raleway:ital,wght@0,100..900;1,100..900"
+            },
+            arimo: {
+                name: "Arimo",
+                value: "arimo",
+                import: "Arimo:ital,wght@0,400..700;1,400..700"
+            },
+            baloo2: {
+                name: "Baloo 2",
+                value: "baloo2",
+                import: "Baloo+2:wght@400..800"
+            },
+            quicksand: {
+                name: "Quicksand",
+                value: "quicksand",
+                import: "Quicksand:wght@300..700"
+            },
+            overpass: {
+                name: "Overpass",
+                value: "overpass",
+                import: "Overpass:ital,wght@0,100..900;1,100..900"
+            },
+            varelaRound: {
+                name: "Varela Round",
+                value: "varelaround",
+                import: "Varela+Round:wght@400"
+            },
         };
 
         static ACTIONS_TO_RELOAD = [
@@ -150,20 +227,9 @@
         }
 
         inject() {
-            this.injectFont();
             this.injectLayout();
             this.injectButtons();
             this.injectSettingButtonFix();
-        }
-
-        injectFont() {
-            const url = `https://fonts.googleapis.com/css2?family=${this.font.import}&display=swap`;
-            GM_addStyle(`
-                @import url('${url}');
-                body, ${Config.DOM.contentBox} {
-                    font-family: "${this.font.name}", sans-serif !important;
-                }
-            `);
         }
 
         injectLayout() {
@@ -404,6 +470,36 @@
                 settingBtn.classList.add(Config.CLASSNAME.button85);
             }
         }
+
+        static setupFontSelector() {
+            const fontSelect = document.getElementById(Config.DOM.fontSelect);
+            if (!fontSelect) return;
+
+            Object.values(Config.FONTS).forEach(font => {
+                fontSelect.add(new Option(font.name, font.value));
+            });
+
+            fontSelect.addEventListener('change', () => {
+                if (!fontSelect.value) return;
+
+                const font = Object.values(Config.FONTS).find(f => f.value === fontSelect.value);
+                if (!font) return;
+
+                const linkId = `font-${font.value}-link`;
+                if (!document.getElementById(linkId)) {
+                    const link = document.createElement('link');
+                    link.id = linkId;
+                    link.href = `https://fonts.googleapis.com/css2?family=${font.import}&display=swap`;
+                    link.rel = 'stylesheet';
+                    document.head.appendChild(link);
+                }
+
+                const fontFamily = `"${font.name}", sans-serif`;
+                document.body.style.fontFamily = fontFamily;
+                const contentBox = document.querySelector(Config.DOM.contentBox);
+                if (contentBox) contentBox.style.fontFamily = fontFamily;
+            });
+        }
     }
 
     // ==================== 🚀 APPLICATION ====================
@@ -428,6 +524,7 @@
             makeBtn("highlightBtn", "On", () => this.formatter.switchHighlight(), 215);
 
             UIManager.addClassSettingButton();
+            UIManager.setupFontSelector();
         }
 
         setupAutoFormat() {
