@@ -5,6 +5,7 @@
 // @match       *://sangtacviet.pro/truyen/*
 // @match       *://sangtacviet.com/truyen/*
 // @match       *://sangtacviet.xyz/truyen/*
+// @match       *://sangtacviet.app/truyen/*
 // @match       *://14.225.254.182/truyen/*
 // @icon        https://i.ibb.co/mVNM0Ms4/419660.png
 // @version     1.5
