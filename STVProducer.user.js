@@ -6,8 +6,16 @@
 // @author         @Undefined & @Yuusei
 // @license        GPL-3.0
 // @icon           https://sangtacviet.vip/favicon.png
-// @match          *://sangtacviet.vip/*
+// @match          *://sangtacviet.vip/truyen/*
+// @match          *://sangtacviet.pro/truyen/*
+// @match          *://sangtacviet.com/truyen/*
+// @match          *://sangtacviet.xyz/truyen/*
+// @match          *://14.225.254.182/truyen/*
 // @exclude        *://sangtacviet.vip/surf.php
+// @exclude        *://sangtacviet.pro/surf.php
+// @exclude        *://sangtacviet.com/surf.php
+// @exclude        *://sangtacviet.xyz/surf.php
+// @exclude        *://14.225.254.182/surf.php
 // @grant          GM_addStyle
 // ==/UserScript==
 
