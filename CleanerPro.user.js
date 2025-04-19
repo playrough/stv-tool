@@ -6,7 +6,7 @@
 // @match       *://sangtacviet.app/truyen/*
 // @icon        https://i.ibb.co/mVNM0Ms4/419660.png
 // @version     1.5
-// @author      -
+// @author      @playrough
 // @description Clean and format text
 // @grant       GM_addStyle
 // @run-at      document-start
