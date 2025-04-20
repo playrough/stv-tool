@@ -12,16 +12,22 @@
 // @author      @playrough
 // @description Clean and format text
 // @grant       GM_addStyle
+// @grant       GM_getValue
+// @grant       GM_setValue
 // @run-at      document-start
 // ==/UserScript==
 
-(function () {
+(function() {
     "use strict";
 
     // ==================== 📁 CONFIG ====================
     class Config {
         static UI = {
-            button: { position: 'fixed', right: '16px', zIndex: '1000' },
+            button: {
+                position: 'fixed',
+                right: '16px',
+                zIndex: '1000'
+            },
             notifier: {
                 position: "fixed",
                 bottom: "30px",
@@ -54,8 +60,12 @@
             fontSelect: "selfont"
         };
 
-        static CLASSNAME = {
+        static CLASSNAMES = {
             button85: "button-85"
+        };
+
+        static STORAGE_KEYS = {
+            fontOption: "font-option"
         };
 
         static FONTS = {
@@ -220,6 +230,19 @@
         }
     }
 
+    // ==================== 🎒 STORAGE ==========================
+    class Storage {
+
+        static get(key, defaultValue = null) {
+            return GM_getValue(key, defaultValue);
+        }
+
+        static set(key, value) {
+            GM_setValue(key, value);
+            return value;
+        }
+    }
+
     // ==================== 🎨 STYLE MANAGER ====================
     class StyleManager {
         constructor(fonts) {
@@ -253,7 +276,7 @@
 
         injectButtons() {
             GM_addStyle(`
-                .${Config.CLASSNAME.button85}:before {
+                .${Config.CLASSNAMES.button85}:before {
                     content: "";
                     background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
                     position: absolute;
@@ -270,7 +293,7 @@
                     border-radius: 10px;
                 }
 
-                .${Config.CLASSNAME.button85} {
+                .${Config.CLASSNAMES.button85} {
                     font-size: 12px;
                     padding: 0.6em;
                     width: 50px;
@@ -287,7 +310,7 @@
                     touch-action: manipulation;
                 }
 
-                .${Config.CLASSNAME.button85}:after {
+                .${Config.CLASSNAMES.button85}:after {
                     z-index: -1;
                     content: "";
                     position: absolute;
@@ -305,26 +328,26 @@
                     100% { background-position: 0 0; }
                 }
 
-                .${Config.CLASSNAME.button85} {
+                .${Config.CLASSNAMES.button85} {
                     transition: transform 0.2s ease, box-shadow 0.2s ease;
                     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
                 }
 
-                .${Config.CLASSNAME.button85}:hover {
+                .${Config.CLASSNAMES.button85}:hover {
                     transform: scale(1.08);
                     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
                 }
 
-                .${Config.CLASSNAME.button85}:active {
+                .${Config.CLASSNAMES.button85}:active {
                     transform: scale(0.95);
                 }
 
                 @media (hover: none) {
-                    .${Config.CLASSNAME.button85}:active {
+                    .${Config.CLASSNAMES.button85}:active {
                         transform: scale(0.95);
                     }
 
-                    .${Config.CLASSNAME.button85}:focus {
+                    .${Config.CLASSNAMES.button85}:focus {
                         transform: scale(1.08);
                     }
                 }
@@ -398,9 +421,16 @@
         normalizePunctuation(el) {
             const txt = el.textContent;
             const start = txt.match(Config.REGEX.START_PUNCT);
-            if (start) { el.textContent = start[2]; el.insertAdjacentText("beforebegin", start[1] + " "); return; }
+            if (start) {
+                el.textContent = start[2];
+                el.insertAdjacentText("beforebegin", start[1] + " ");
+                return;
+            }
             const end = txt.match(Config.REGEX.END_PUNCT);
-            if (end) { el.textContent = end[1]; el.insertAdjacentText("afterend", end[2]); }
+            if (end) {
+                el.textContent = end[1];
+                el.insertAdjacentText("afterend", end[2]);
+            }
             if (el.textContent.trim() === "") el.remove();
         }
 
@@ -430,7 +460,9 @@
         cleanTextNode(node) {
             if (!node?.nodeValue?.trim()) return;
             let txt = node.nodeValue;
-            Config.CLEAN_RULES.forEach(([pat, rep]) => { txt = txt.replace(pat, rep); });
+            Config.CLEAN_RULES.forEach(([pat, rep]) => {
+                txt = txt.replace(pat, rep);
+            });
             if (txt !== node.nodeValue) node.nodeValue = txt;
         }
     }
@@ -438,7 +470,10 @@
     // ==================== 🧪 UI MANAGER ====================
     class UIManager {
         static showNotify(message, duration = 2000) {
-            const el = DomHelper.create("div", { className: Config.CLASSNAME.button85, textContent: message }, Config.UI.notifier);
+            const el = DomHelper.create("div", {
+                className: Config.CLASSNAMES.button85,
+                textContent: message
+            }, Config.UI.notifier);
             DomHelper.animate(el, ["opacity", "transform"]);
             document.body.appendChild(el);
             requestAnimationFrame(() => {
@@ -452,13 +487,21 @@
             }, duration);
         }
 
-        static createFloatingButton({ id, text, onClick, bottom }) {
+        static createFloatingButton({
+            id,
+            text,
+            onClick,
+            bottom
+        }) {
             const btn = DomHelper.create("button", {
                 id,
-                className: Config.CLASSNAME.button85,
+                className: Config.CLASSNAMES.button85,
                 textContent: text,
                 onclick: onClick
-            }, { ...Config.UI.button, bottom: `${bottom}px` });
+            }, {
+                ...Config.UI.button,
+                bottom: `${bottom}px`
+            });
 
             DomHelper.animate(btn, ["transform"]);
             document.body.appendChild(btn);
@@ -467,7 +510,7 @@
         static addClassSettingButton() {
             const settingBtn = document.querySelector(Config.DOM.settingBtn);
             if (settingBtn) {
-                settingBtn.classList.add(Config.CLASSNAME.button85);
+                settingBtn.classList.add(Config.CLASSNAMES.button85);
             }
         }
 
@@ -475,30 +518,51 @@
             const fontSelect = document.getElementById(Config.DOM.fontSelect);
             if (!fontSelect) return;
 
+            // Populate font options
             Object.values(Config.FONTS).forEach(font => {
                 fontSelect.add(new Option(font.name, font.value));
             });
 
+            // Initialize with stored font or default
+            this.applySelectedFont(fontSelect);
+
+            // Handle font change
             fontSelect.addEventListener('change', () => {
                 if (!fontSelect.value) return;
-
-                const font = Object.values(Config.FONTS).find(f => f.value === fontSelect.value);
-                if (!font) return;
-
-                const linkId = `font-${font.value}-link`;
-                if (!document.getElementById(linkId)) {
-                    const link = document.createElement('link');
-                    link.id = linkId;
-                    link.href = `https://fonts.googleapis.com/css2?family=${font.import}&display=swap`;
-                    link.rel = 'stylesheet';
-                    document.head.appendChild(link);
-                }
-
-                const fontFamily = `"${font.name}", sans-serif`;
-                document.body.style.fontFamily = fontFamily;
-                const contentBox = document.querySelector(Config.DOM.contentBox);
-                if (contentBox) contentBox.style.fontFamily = fontFamily;
+                Storage.set(Config.STORAGE_KEYS.fontOption, fontSelect.value);
+                this.applySelectedFont(fontSelect);
             });
+        }
+
+        static applySelectedFont(fontSelect) {
+            const storedFont = Storage.get(Config.STORAGE_KEYS.fontOption);
+            if (storedFont) {
+                fontSelect.value = storedFont;
+            }
+
+            const font = Object.values(Config.FONTS).find(f => f.value === fontSelect.value);
+            if (!font) return;
+
+            this.loadFont(font);
+            this.setFontFamily(font);
+        }
+
+        static loadFont(font) {
+            const linkId = `font-${font.value}-link`;
+            if (!document.getElementById(linkId)) {
+                const link = document.createElement('link');
+                link.id = linkId;
+                link.href = `https://fonts.googleapis.com/css2?family=${font.import}&display=swap`;
+                link.rel = 'stylesheet';
+                document.head.appendChild(link);
+            }
+        }
+
+        static setFontFamily(font) {
+            const fontFamily = `"${font.name}", sans-serif`;
+            document.body.style.fontFamily = fontFamily;
+            const contentBox = document.querySelector(Config.DOM.contentBox);
+            if (contentBox) contentBox.style.fontFamily = fontFamily;
         }
     }
 
@@ -517,7 +581,12 @@
         }
 
         createUI() {
-            const makeBtn = (id, text, onClick, bottom) => UIManager.createFloatingButton({ id, text, onClick, bottom });
+            const makeBtn = (id, text, onClick, bottom) => UIManager.createFloatingButton({
+                id,
+                text,
+                onClick,
+                bottom
+            });
 
             makeBtn("fixCleanBtn", "Clean", () => this.formatter.format(), 150);
             makeBtn("copyBtn", "Copy", () => this.formatter.copyName(), 85);
@@ -543,7 +612,9 @@
     // ==================== 🧼 AUTO INIT ====================
     window.addEventListener("DOMContentLoaded", () => {
         if (document.querySelector(Config.DOM.contentBox + " i")) {
-            requestIdleCallback(() => App.start(), { timeout: 2000 });
+            requestIdleCallback(() => App.start(), {
+                timeout: 2000
+            });
         }
     });
 
