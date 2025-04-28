@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        Cleaner Pro
+// @name        Cleaner Pro S
 // @namespace   Violentmonkey Scripts
 // @match       *://sangtacviet.vip/truyen/*
 // @match       *://sangtacviet.pro/truyen/*
@@ -8,614 +8,602 @@
 // @match       *://sangtacviet.app/truyen/*
 // @match       *://14.225.254.182/truyen/*
 // @icon        https://i.ibb.co/mVNM0Ms4/419660.png
-// @version     1.5
+// @version     1.6
 // @author      @playrough
 // @description Clean and format text
 // @grant       GM_addStyle
-// @grant       GM_getValue
-// @grant       GM_setValue
 // @run-at      document-start
 // ==/UserScript==
 
-(function() {
-    "use strict";
+(function () {
+	"use strict";
 
-    // ==================== 📁 CONFIG ====================
-    class Config {
-        static UI = {
-            button: {
-                position: 'fixed',
-                right: '16px',
-                zIndex: '1000'
-            },
-            notifier: {
-                position: "fixed",
-                bottom: "30px",
-                left: "50%",
-                transform: "translateX(-50%) translateY(20px)",
-                width: "auto",
-                height: "auto",
-                padding: "10px 20px",
-                borderRadius: "12px",
-                fontSize: "12px",
-                fontWeight: "500",
-                opacity: "0",
-                pointerEvents: "none",
-                backdropFilter: "blur(6px)",
-                zIndex: "1001",
-            },
-            colors: {
-                highlight: "oklch(70.7% .165 254.624)"
+	// Configuration object
+	const CONFIG = {
+		DOM: {
+			nameInput: "#namewd",
+			nameSettingBox: "#nsbox",
+			contentBox: "#content-container .contentbox",
+			configBox: "#configBox",
+			settingBtn: "#btnshowns",
+			highlightBtn: "#highlightBtn",
+			settingIcon: ".fa-cogs.fas",
+		},
+
+		CLASSNAMES: {
+			button85: "button-85"
+		},
+
+		ACTIONS_TO_RELOAD: [
+			"addSuperName('hv','z')",
+			"addSuperName('hv','f')",
+			"addSuperName('hv','s')",
+			"addSuperName('hv','l')",
+			"addSuperName('hv','a')",
+			"addSuperName('el')",
+			"addSuperName('vp')",
+			"addSuperName('kn')",
+			"saveNS();excute();",
+			"excute()",
+		],
+
+		REGEX: {
+			REVERSE_TRIM_TEXT: {
+				pattern: /[\w\s\p{L}\p{M}]+/gu,
+				replace: " $& ",
+			},
+			START_SIGNS: {
+				pattern: /^\s*([^\w\s\p{L}\p{M}]+(?:\s+[^\w\s\p{L}\p{M}]+)*)(.*)$/u,
+				replace: "$2",
+			},
+			END_SIGNS: {
+				pattern: /^(.*?)([^\w\s\p{L}\p{M}]+(?:\s+[^\w\s\p{L}\p{M}]+)*)\s*$/u,
+				replace: "$1",
+			},
+			ENDS: {
+				pattern: /[.;:!?“【〘《]$/,
+				replace: null,
+			},
+		},
+
+		RULES: {
+			STICKY_SIGNS: {
+				pattern: /([,.:;!?，。！？、；：])([{‘“'"])/g,
+				replace: "$1 $2",
+			},
+			OPEN_SIGNS: {
+				pattern: /[】〙》({\[\<“‘"'`]+/g,
+				replace: " $&",
+			},
+			CLOSE_SIGNS: {
+				pattern: /[【〘《.,!?;:`”’"'#$^&\])}>|]+/g,
+				replace: "$& ",
+			},
+			MID_SIGNS: {
+				pattern: /[\-+*/=~—·]/g,
+				replace: " $& ",
+			},
+			SPACE_BETWEEN_SIGNS: {
+				pattern: /([^\w\s\p{L}\p{M}])\s+([^\w\s\p{L}\p{M}])/gu,
+				replace: "$1 $2",
+			},
+			SPACE_BEFORE_SIGNS: {
+				pattern: /\s+([,.:;!?，。！？、；：])/g,
+				replace: "$1",
+			},
+			SPACE_AFTER_OPEN: {
+				pattern: /([([{‘“'"])\s+/g,
+				replace: "$1",
+			},
+			SPACE_BEFORE_CLOSE: {
+				pattern: /\s+([)\]}’”'"])/g,
+				replace: "$1",
+			},
+			NUMBER_COMMA: {
+				pattern: /\b\d{1,3}(?=(\d{3})+\b)/g,
+				replace: "$&,",
+			},
+			NUMBER_SPACE: {
+				pattern: /(?<=\d)\s*([,.:])\s*(?=\d)/g,
+				replace: "$1",
+			},
+			OPEN_BRACKET: {
+				pattern: /【/g,
+				replace: "〘",
+			},
+			CLOSE_BRACKET: {
+				pattern: /】/g,
+				replace: "〙",
+			},
+			OPEN_ARROW: {
+				pattern: /《/g,
+				replace: "〘",
+			},
+			CLOSE_ARROW: {
+				pattern: /》/g,
+				replace: "〙",
+			},
+		},
+
+		MESSAGES: {
+			CLEANED: "🎰 Cleaned & sorted!",
+			COPY_SUCCESS: "📋 Name copied!",
+			COPY_FAILED: "❌ Copy failed!",
+			MODE_ON: "☕️ Highlight mode: On",
+			MODE_OFF: "🍵 Highlight mode: Off",
+		},
+
+		// Combined CSS for injection
+		CSS: `
+            #namewd {
+                padding: 15px;
+                line-height: 1.8;
+                height: 500px;
             }
-        };
 
-        static DOM = {
-            nameInput: "#namewd",
-            nameSettingBox: "#nsbox",
-            contentBox: "#content-container .contentbox",
-            configBox: "#configBox",
-            settingBtn: "#btnshowns",
-            highlightBtn: "#highlightBtn",
-            settingIcon: ".fa-cogs.fas",
-            fontSelect: "selfont"
-        };
-
-        static CLASSNAMES = {
-            button85: "button-85"
-        };
-
-        static STORAGE_KEYS = {
-            fontOption: "font-option"
-        };
-
-        static FONTS = {
-            nunitoSans: {
-                name: "Nunito Sans",
-                value: "nunitosans",
-                import: "Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000"
-            },
-            merriweather: {
-                name: "Merriweather",
-                value: "merriweather",
-                import: "Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900"
-            },
-            firaSans: {
-                name: "Fira Sans",
-                value: "firasans",
-                import: "Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900"
-            },
-            literata: {
-                name: "Literata",
-                value: "literata",
-                import: "Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900"
-            },
-            lexend: {
-                name: "Lexend",
-                value: "lexend",
-                import: "Lexend:wght@100..900"
-            },
-            spectral: {
-                name: "Spectral",
-                value: "spectral",
-                import: "Spectral:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800"
-            },
-            bitter: {
-                name: "Bitter",
-                value: "bitter",
-                import: "Bitter:ital,wght@0,100..900;1,100..900"
-            },
-            barlow: {
-                name: "Barlow",
-                value: "barlow",
-                import: "Barlow:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900"
-            },
-            inter: {
-                name: "Inter",
-                value: "inter",
-                import: "Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900"
-            },
-            manrope: {
-                name: "Manrope",
-                value: "manrope",
-                import: "Manrope:wght@200..800"
-            },
-            raleway: {
-                name: "Raleway",
-                value: "raleway",
-                import: "Raleway:ital,wght@0,100..900;1,100..900"
-            },
-            arimo: {
-                name: "Arimo",
-                value: "arimo",
-                import: "Arimo:ital,wght@0,400..700;1,400..700"
-            },
-            baloo2: {
-                name: "Baloo 2",
-                value: "baloo2",
-                import: "Baloo+2:wght@400..800"
-            },
-            quicksand: {
-                name: "Quicksand",
-                value: "quicksand",
-                import: "Quicksand:wght@300..700"
-            },
-            overpass: {
-                name: "Overpass",
-                value: "overpass",
-                import: "Overpass:ital,wght@0,100..900;1,100..900"
-            },
-            varelaRound: {
-                name: "Varela Round",
-                value: "varelaround",
-                import: "Varela+Round:wght@400"
-            },
-        };
-
-        static ACTIONS_TO_RELOAD = [
-            "addSuperName('hv','z')",
-            "addSuperName('hv','f')",
-            "addSuperName('hv','s')",
-            "addSuperName('hv','l')",
-            "addSuperName('hv','a')",
-            "addSuperName('el')",
-            "addSuperName('vp')",
-            "addSuperName('kn')",
-            "saveNS();excute();",
-            "excute()",
-        ];
-
-        static TEXT = {
-            BREAKS: ["【", ":【", "“", "‘", "“‘", "『", "——"],
-            ENDS: [".", "。", "！", "!", "?", ": “", ": ‘"],
-
-            SPAN_STYLE: {
-                fontWeight: "bold",
-
-            },
-
-            getColoredSpan: (color, text) => {
-                return `<span style="font-weight: ${Config.TEXT.SPAN_STYLE.fontWeight};
-                            color: ${color || "inherit"}">${text}
-                        </span>`;
+            .fa-cogs.fas {
+                color: #ffffff !important;
             }
-        };
 
-        static REGEX = {
-            PUNCT_BRACKET: /([,.:;!?，。！？、；：])([([{‘“'"])/g,
-            OPEN_PAREN: /\(/g,
-            SPACE_BEFORE_PUNCT: /\s+([,.:;!?，。！？、；：])/g,
-            SPACE_AFTER_OPEN: /([([{‘“'"])\s+/g,
-            SPACE_BEFORE_CLOSE: /\s+([)\]}’”'"])/g,
-            NUMBER_COMMA: /\b\d{1,3}(?=(\d{3})+\b)/g,
-            OPEN_BRACKET: /【/g,
-            CLOSE_BRACKET: /】/g,
+            #nsbox {
+                position: absolute !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+            }
 
-            START_PUNCT: /^([,\.\!\?:;“])\s*(.*)$/,
-            END_PUNCT: /^(.*?)([,\.\!\?:;“])$/,
+            #configBox {
+                right: 85px !important;
+            }
 
-            COLOR_TAG: /\{([a-zA-Z#0-9]+),\s*([^}]+)\}/g
-        };
+            #btnshowns .fa-cogs.fas {
+                color: white !important;
+                font-size: 24px !important;
+            }
 
-        static CLEAN_RULES = [
-            [Config.REGEX.PUNCT_BRACKET, "$1 $2"],
-            [Config.REGEX.OPEN_PAREN, " ("],
-            [Config.REGEX.SPACE_BEFORE_PUNCT, "$1"],
-            [Config.REGEX.SPACE_AFTER_OPEN, "$1"],
-            [Config.REGEX.SPACE_BEFORE_CLOSE, "$1"],
-            [Config.REGEX.NUMBER_COMMA, "$&,"],
-            [Config.REGEX.OPEN_BRACKET, "『 "],
-            [Config.REGEX.CLOSE_BRACKET, " 』"],
-        ];
+            .button-85:before {
+                content: "";
+                background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+                position: absolute;
+                top: -1px;
+                left: -1px;
+                background-size: 400%;
+                z-index: -1;
+                width: calc(100% + 2px);
+                height: calc(100% + 2px);
+                animation: glowing-button-85 20s linear infinite;
+                transition: opacity 0.3s ease-in-out;
+                border-radius: 10px;
+            }
 
-        static MESSAGE = {
-            CLEANED: "🎊 Cleaned & colored!",
-            COPY_SUCCESS: "📋 Name copied!",
-            COPY_FAILED: "❌ Copy failed!",
-            MODE_ON: "☕️ Highlight mode: On",
-            MODE_OFF: "🍵 Highlight mode: Off",
-        }
-    }
+            .button-85 {
+                font-size: 12px;
+                padding: 0.6em;
+                width: 50px;
+                height: 50px;
+                border: none;
+                outline: none !important;
+                color: rgb(255, 255, 255);
+                background: #111;
+                cursor: pointer;
+                z-index: 1000;
+                border-radius: 10px;
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: manipulation;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+            }
 
-    // ==================== 🧰 DOM HELPER ====================
-    class DomHelper {
-        static create(tag, props = {}, styles = {}) {
-            const el = document.createElement(tag);
-            Object.assign(el, props);
-            Object.assign(el.style, styles);
-            return el;
-        }
+            .button-85:after {
+                z-index: -1;
+                content: "";
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                background: #222;
+                left: 0;
+                top: 0;
+                border-radius: 10px;
+            }
 
-        static animate(el, props, duration = "0.4s", easing = "ease") {
-            el.style.transition = props.map(p => `${p} ${duration} ${easing}`).join(", ");
-        }
-    }
+            .button-85:hover {
+                transform: scale(1.08);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            }
 
-    // ==================== 🎒 STORAGE ==========================
-    class Storage {
+            .button-85:active {
+                transform: scale(0.95);
+            }
 
-        static get(key, defaultValue = null) {
-            return GM_getValue(key, defaultValue);
-        }
-
-        static set(key, value) {
-            GM_setValue(key, value);
-            return value;
-        }
-    }
-
-    // ==================== 🎨 STYLE MANAGER ====================
-    class StyleManager {
-        constructor(fonts) {
-            this.font = fonts.nunitoSans;
-        }
-
-        inject() {
-            this.injectLayout();
-            this.injectButtons();
-            this.injectSettingButtonFix();
-        }
-
-        injectLayout() {
-            GM_addStyle(`
-                ${Config.DOM.nameInput} {
-                    padding: 15px;
-                    line-height: 1.8;
-                }
-
-                ${Config.DOM.settingIcon} {
-                    color: #ffffff !important;
-                }
-
-                /* ${Config.DOM.nameSettingBox} {
-                      position: absolute !important;
-                      left: 50% !important;
-                      transform: translateX(-50%) !important;
-                } */
-            `);
-        }
-
-        injectButtons() {
-            GM_addStyle(`
-                .${Config.CLASSNAMES.button85}:before {
-                    content: "";
-                    background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
-                    position: absolute;
-                    top: -2px;
-                    left: -2px;
-                    background-size: 400%;
-                    z-index: -1;
-                    filter: blur(5px);
-                    -webkit-filter: blur(5px);
-                    width: calc(100% + 2px);
-                    height: calc(100% + 2px);
-                    animation: glowing-button-85 20s linear infinite;
-                    transition: opacity 0.3s ease-in-out;
-                    border-radius: 10px;
-                }
-
-                .${Config.CLASSNAMES.button85} {
-                    font-size: 12px;
-                    padding: 0.6em;
-                    width: 50px;
-                    height: 50px;
-                    border: none;
-                    outline: none !important;
-                    color: rgb(255, 255, 255);
-                    background: #111;
-                    cursor: pointer;
-                    z-index: 0;
-                    border-radius: 10px;
-                    user-select: none;
-                    -webkit-user-select: none;
-                    touch-action: manipulation;
-                }
-
-                .${Config.CLASSNAMES.button85}:after {
-                    z-index: -1;
-                    content: "";
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    background: #222;
-                    left: 0;
-                    top: 0;
-                    border-radius: 10px;
-                }
-
-                @keyframes glowing-button-85 {
-                    0% { background-position: 0 0; }
-                    50% { background-position: 400% 0; }
-                    100% { background-position: 0 0; }
-                }
-
-                .${Config.CLASSNAMES.button85} {
-                    transition: transform 0.2s ease, box-shadow 0.2s ease;
-                    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
-                }
-
-                .${Config.CLASSNAMES.button85}:hover {
-                    transform: scale(1.08);
-                    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-                }
-
-                .${Config.CLASSNAMES.button85}:active {
+            @media (hover: none) {
+                .button-85:active {
                     transform: scale(0.95);
                 }
 
-                @media (hover: none) {
-                    .${Config.CLASSNAMES.button85}:active {
-                        transform: scale(0.95);
-                    }
-
-                    .${Config.CLASSNAMES.button85}:focus {
-                        transform: scale(1.08);
-                    }
+                .button-85:focus {
+                    transform: scale(1.08);
                 }
-            `);
-        }
-
-        injectSettingButtonFix() {
-            GM_addStyle(`
-                ${Config.DOM.configBox} {
-                    right: 85px !important;
-                }
-
-                ${Config.DOM.settingBtn} ${Config.DOM.settingIcon} {
-                    color: white !important;
-                    font-size: 24px !important;
-                }
-            `);
-        }
-    }
-
-    // ==================== 🪄 TEXT FORMATTER ====================
-    class TextFormatter {
-        constructor(dom, colorMap) {
-            this.dom = dom;
-            this.colors = colorMap;
-            this.isHighlighted = true;
-            this.nameInput = document.querySelector(dom.nameInput);
-            this.contentBox = document.querySelector(dom.contentBox);
-        }
-
-        format() {
-            if (!this.contentBox) return;
-            this.contentBox.normalize();
-            this.contentBox.querySelectorAll("i").forEach(el => {
-                this.normalizePunctuation(el);
-                this.toLowerCase(el);
-                this.capitalizeStart(el);
-                this.convertColor(el);
-                if (!el.textContent.trim()) el.remove();
-            });
-
-            const walker = document.createTreeWalker(this.contentBox, NodeFilter.SHOW_TEXT);
-            while (walker.nextNode()) this.cleanTextNode(walker.currentNode);
-
-            UIManager.showNotify(Config.MESSAGE.CLEANED);
-        }
-
-        copyName() {
-            navigator.clipboard.writeText(this.nameInput?.value || "")
-                .then(() => UIManager.showNotify(Config.MESSAGE.COPY_SUCCESS))
-                .catch(() => UIManager.showNotify(Config.MESSAGE.COPY_FAILED));
-        }
-
-        switchHighlight(forceOn = false) {
-            if (forceOn) this.isHighlighted = true;
-
-            const btn = document.querySelector(Config.DOM.highlightBtn);
-            if (btn) btn.textContent = this.isHighlighted ? "Off" : "On";
-
-            this.contentBox.querySelectorAll("i").forEach(el => {
-                if (el.getAttribute("isname")) {
-                    el.style.color = this.isHighlighted ? Config.UI.colors.highlight : "";
-                    el.style.fontWeight = this.isHighlighted ? "bold" : "normal";
-                }
-            });
-
-            this.isHighlighted = !this.isHighlighted;
-            UIManager.showNotify(this.isHighlighted ? Config.MESSAGE.MODE_OFF : Config.MESSAGE.MODE_ON);
-        }
-
-        normalizePunctuation(el) {
-            const txt = el.textContent;
-            const start = txt.match(Config.REGEX.START_PUNCT);
-            if (start) {
-                el.textContent = start[2];
-                el.insertAdjacentText("beforebegin", start[1] + " ");
-                return;
-            }
-            const end = txt.match(Config.REGEX.END_PUNCT);
-            if (end) {
-                el.textContent = end[1];
-                el.insertAdjacentText("afterend", end[2]);
-            }
-            if (el.textContent.trim() === "") el.remove();
-        }
-
-        toLowerCase(el) {
-            if (!el.hasAttribute("isname") && !el.id?.startsWith("exran")) el.textContent = el.textContent.toLowerCase();
-        }
-
-        capitalizeStart(el) {
-            const prevEl = el.previousElementSibling;
-            const prevNode = el.previousSibling;
-            if (!prevEl || !prevNode) return;
-
-            const getText = (dom) => dom?.textContent?.trim() || "";
-            if (prevEl.nodeName === "BR" ||
-                Config.TEXT.BREAKS.includes(getText(prevEl)) ||
-                Config.TEXT.ENDS.includes(getText(prevNode))) {
-                const txt = el.innerHTML;
-                el.innerHTML = txt[0].toUpperCase() + txt.slice(1);
-            }
-        }
-
-        convertColor(el) {
-            el.innerHTML = el.innerHTML.replace(Config.REGEX.COLOR_TAG, (_, color, text) =>
-                Config.TEXT.getColoredSpan(this.colors[color] || "inherit", text));
-        }
-
-        cleanTextNode(node) {
-            if (!node?.nodeValue?.trim()) return;
-            let txt = node.nodeValue;
-            Config.CLEAN_RULES.forEach(([pat, rep]) => {
-                txt = txt.replace(pat, rep);
-            });
-            if (txt !== node.nodeValue) node.nodeValue = txt;
-        }
-    }
-
-    // ==================== 🧪 UI MANAGER ====================
-    class UIManager {
-        static showNotify(message, duration = 2000) {
-            const el = DomHelper.create("div", {
-                className: Config.CLASSNAMES.button85,
-                textContent: message
-            }, Config.UI.notifier);
-            DomHelper.animate(el, ["opacity", "transform"]);
-            document.body.appendChild(el);
-            requestAnimationFrame(() => {
-                el.style.opacity = "1";
-                el.style.transform = "translateX(-50%) translateY(0)";
-            });
-            setTimeout(() => {
-                el.style.opacity = "0";
-                el.style.transform = "translateX(-50%) translateY(20px)";
-                el.addEventListener("transitionend", () => el.remove());
-            }, duration);
-        }
-
-        static createFloatingButton({
-            id,
-            text,
-            onClick,
-            bottom
-        }) {
-            const btn = DomHelper.create("button", {
-                id,
-                className: Config.CLASSNAMES.button85,
-                textContent: text,
-                onclick: onClick
-            }, {
-                ...Config.UI.button,
-                bottom: `${bottom}px`
-            });
-
-            DomHelper.animate(btn, ["transform"]);
-            document.body.appendChild(btn);
-        }
-
-        static addClassSettingButton() {
-            const settingBtn = document.querySelector(Config.DOM.settingBtn);
-            if (settingBtn) {
-                settingBtn.classList.add(Config.CLASSNAMES.button85);
-            }
-        }
-
-        static setupFontSelector() {
-            const fontSelect = document.getElementById(Config.DOM.fontSelect);
-            if (!fontSelect) return;
-
-            // Populate font options
-            Object.values(Config.FONTS).forEach(font => {
-                fontSelect.add(new Option(font.name, font.value));
-            });
-
-            // Initialize with stored font or default
-            this.applySelectedFont(fontSelect);
-
-            // Handle font change
-            fontSelect.addEventListener('change', () => {
-                if (!fontSelect.value) return;
-                Storage.set(Config.STORAGE_KEYS.fontOption, fontSelect.value);
-                this.applySelectedFont(fontSelect);
-            });
-        }
-
-        static applySelectedFont(fontSelect) {
-            const storedFont = Storage.get(Config.STORAGE_KEYS.fontOption);
-            if (storedFont) {
-                fontSelect.value = storedFont;
             }
 
-            const font = Object.values(Config.FONTS).find(f => f.value === fontSelect.value);
-            if (!font) return;
-
-            this.loadFont(font);
-            this.setFontFamily(font);
-        }
-
-        static loadFont(font) {
-            const linkId = `font-${font.value}-link`;
-            if (!document.getElementById(linkId)) {
-                const link = document.createElement('link');
-                link.id = linkId;
-                link.href = `https://fonts.googleapis.com/css2?family=${font.import}&display=swap`;
-                link.rel = 'stylesheet';
-                document.head.appendChild(link);
+            .cp-notifier {
+                position: fixed;
+                bottom: 30px;
+                left: 50%;
+                transform: translateX(-50%) translateY(20px);
+                width: auto;
+                height: auto;
+                padding: 10px 20px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 500;
+                opacity: 0;
+                pointer-events: none;
+                backdrop-filter: blur(6px);
+                z-index: 1001;
+                transition: opacity 0.4s ease, transform 0.4s ease;
             }
-        }
 
-        static setFontFamily(font) {
-            const fontFamily = `"${font.name}", sans-serif`;
-            document.body.style.fontFamily = fontFamily;
-            const contentBox = document.querySelector(Config.DOM.contentBox);
-            if (contentBox) contentBox.style.fontFamily = fontFamily;
-        }
-    }
+            .cp-floating-btn {
+                position: fixed;
+                right: 16px;
+                z-index: 1000;
+            }
+        `
+    };
 
-    // ==================== 🚀 APPLICATION ====================
-    class App {
-        constructor() {
-            this.style = new StyleManager(Config.FONTS);
-            this.formatter = new TextFormatter(Config.DOM, {});
-        }
+	// Main App
+	const app = {
+		constructor() {
+			this.isHighlighted = true;
+			this.domCache = {};
+		},
 
-        init() {
-            this.style.inject();
-            this.createUI();
-            this.setupAutoFormat();
-            this.formatter.format();
-        }
+		init() {
+			// Inject CSS
+			GM_addStyle(CONFIG.CSS);
 
-        createUI() {
-            const makeBtn = (id, text, onClick, bottom) => UIManager.createFloatingButton({
-                id,
-                text,
-                onClick,
-                bottom
-            });
+			// Run when DOMLoaded
+			window.addEventListener("DOMContentLoaded", () => {
+				if (document.querySelector(CONFIG.DOM.contentBox + " i")) {
+					setTimeout(() => {
+						this.cacheDOMElements();
+						this.createUI();
+						this.setupAutoFormat();
+						this.format();
+					}, 2000);
+				}
+			});
+		},
 
-            makeBtn("fixCleanBtn", "Clean", () => this.formatter.format(), 150);
-            makeBtn("copyBtn", "Copy", () => this.formatter.copyName(), 85);
-            makeBtn("highlightBtn", "On", () => this.formatter.switchHighlight(), 215);
+		// Cache DOM elements
+		cacheDOMElements() {
+			this.domCache = {
+				nameInput: document.querySelector(CONFIG.DOM.nameInput),
+				contentBox: document.querySelector(CONFIG.DOM.contentBox),
+				settingBtn: document.querySelector(CONFIG.DOM.settingBtn)
+			};
+		},
 
-            UIManager.addClassSettingButton();
-            UIManager.setupFontSelector();
-        }
+		// Create UI buttons
+		createUI() {
+			// Create floating buttons
+			this.createButton("fixCleanBtn", "Clean", () => this.format(), 150);
+			this.createButton("copyBtn", "Copy", () => this.copyName(), 85);
+			this.createButton("highlightBtn", "On", () => this.switchHighlight(), 215);
 
-        setupAutoFormat() {
-            Config.ACTIONS_TO_RELOAD.forEach(action => {
-                const el = document.querySelector(`[onclick="${action}"]`);
-                if (el) el.addEventListener("click", () => this.formatter.format());
-            });
-        }
+			// Style the settings button
+			if (this.domCache.settingBtn) {
+				this.domCache.settingBtn.classList.add(CONFIG.CLASSNAMES.button85);
+			}
+		},
 
-        static start() {
-            const app = new App();
-            app.init();
-        }
-    }
+		// Create floating button helper
+		createButton(id, text, onClick, bottom) {
+			const btn = document.createElement("button");
+			btn.id = id;
+			btn.className = `${CONFIG.CLASSNAMES.button85} cp-floating-btn`;
+			btn.textContent = text;
+			btn.onclick = onClick;
+			btn.style.bottom = `${bottom}px`;
 
-    // ==================== 🧼 AUTO INIT ====================
-    window.addEventListener("DOMContentLoaded", () => {
-        if (document.querySelector(Config.DOM.contentBox + " i")) {
-            requestIdleCallback(() => App.start(), {
-                timeout: 2000
-            });
-        }
-    });
+			document.body.appendChild(btn);
+			return btn;
+		},
 
+		// Setup auto format triggers
+		setupAutoFormat() {
+			CONFIG.ACTIONS_TO_RELOAD.forEach(action => {
+				const el = document.querySelector(`[onclick="${action}"]`);
+				if (el) {
+					// Use a single event listener with a bound method
+					el.addEventListener("click", this.format.bind(this));
+				}
+			});
+		},
+
+		// Show notification helper
+		showNotify(message, duration = 2000) {
+			const el = document.createElement("div");
+			el.className = `${CONFIG.CLASSNAMES.button85} cp-notifier`;
+			el.textContent = message;
+
+			document.body.appendChild(el);
+
+			// Force reflow to ensure transition works
+			void el.offsetWidth;
+
+			el.style.opacity = "1";
+			el.style.transform = "translateX(-50%) translateY(0)";
+
+			setTimeout(() => {
+				el.style.opacity = "0";
+				el.style.transform = "translateX(-50%) translateY(20px)";
+				el.addEventListener("transitionend", () => el.remove());
+			}, duration);
+		},
+
+		// Main formatting function
+		format() {
+			if (!this.domCache.contentBox) return;
+
+			this.removeEmptyITags();
+			this.domCache.contentBox.normalize();
+
+			this.processITags();
+			this.processTextNodes();
+			this.sort();
+
+			this.showNotify(CONFIG.MESSAGES.CLEANED);
+		},
+
+		// Remove empty i tags
+		removeEmptyITags() {
+			this.domCache.contentBox.querySelectorAll("i").forEach(i => {
+				if (!i.textContent.trim()) i.remove();
+			});
+		},
+
+		// Process i tags
+		processITags() {
+			this.domCache.contentBox.querySelectorAll("i").forEach(i => {
+				this.separatorSigns(i);
+				this.formalizeITag(i);
+				this.toLowercase(i);
+				this.capitalizeStart(i);
+
+				if (!i.textContent.trim()) i.remove();
+			});
+		},
+
+		// Process text nodes
+		processTextNodes() {
+			const walker = document.createTreeWalker(
+				this.domCache.contentBox,
+				NodeFilter.SHOW_TEXT
+			);
+
+			while (walker.nextNode()) {
+				this.normalizeText(walker.currentNode);
+			}
+		},
+
+		// Copy name
+		copyName() {
+			navigator.clipboard.writeText(this.domCache.nameInput?.value || "")
+				.then(() => this.showNotify(CONFIG.MESSAGES.COPY_SUCCESS))
+				.catch(() => this.showNotify(CONFIG.MESSAGES.COPY_FAILED));
+		},
+
+		// Switch highlight mode
+		switchHighlight(forceOn = false) {
+			if (forceOn) this.isHighlighted = true;
+
+			const btn = document.querySelector(CONFIG.DOM.highlightBtn);
+			if (btn) btn.textContent = this.isHighlighted ? "Off" : "On";
+
+			this.domCache.contentBox.querySelectorAll("i").forEach(i => {
+				if (i.getAttribute("isname")) {
+					i.style.color = this.isHighlighted ? "var(--danger)" : "";
+					i.style.fontWeight = this.isHighlighted ? "bold" : "normal";
+				}
+			});
+
+			this.isHighlighted = !this.isHighlighted;
+			this.showNotify(this.isHighlighted ? CONFIG.MESSAGES.MODE_OFF : CONFIG.MESSAGES.MODE_ON);
+		},
+
+		// Handle separator signs
+		separatorSigns(i) {
+			if (!i.id?.startsWith("exran")) return;
+
+			const parent = i.parentNode;
+			let textContent = i.textContent;
+
+			const startMatch = textContent.match(CONFIG.REGEX.START_SIGNS.pattern);
+			if (startMatch) {
+				const prevSibling = i.previousSibling;
+				const isPrevTextNode = prevSibling?.nodeType === Node.TEXT_NODE;
+				const textStart = startMatch[1];
+
+				if (isPrevTextNode && prevSibling.nodeValue.trim() === "") {
+					parent.replaceChild(document.createTextNode(textStart), prevSibling);
+				} else if (isPrevTextNode) {
+					prevSibling.nodeValue += textStart;
+				} else {
+					i.insertAdjacentText("beforebegin", textStart);
+				}
+				i.textContent = startMatch[2];
+				textContent = startMatch[2];
+			}
+
+			const endMatch = textContent.match(CONFIG.REGEX.END_SIGNS.pattern);
+			if (endMatch) {
+				const nextSibling = i.nextSibling;
+				const isNextTextNode = nextSibling?.nodeType === Node.TEXT_NODE;
+				const textEnd = endMatch[2];
+
+				if (isNextTextNode && nextSibling.nodeValue.trim() === "") {
+					parent.replaceChild(document.createTextNode(textEnd), nextSibling);
+				} else if (isNextTextNode) {
+					nextSibling.nodeValue = textEnd + nextSibling.nodeValue;
+				} else {
+					i.insertAdjacentText("afterend", textEnd);
+				}
+				i.textContent = endMatch[1];
+			}
+
+			if (i.textContent.trim() === "") {
+				parent.removeChild(i);
+			}
+
+		},
+
+		// Formalize i tag
+		formalizeITag(i) {
+			if (i) {
+				const prev = i.previousSibling;
+				const next = i.nextSibling;
+
+				i.textContent = i.textContent.trim();
+
+				if (prev && prev.nodeType === 1 && prev.tagName === "I") {
+					i.parentNode.insertBefore(document.createTextNode(" "), i);
+				}
+
+				if (next && next.nodeType === 1 && next.tagName === "I") {
+					i.parentNode.insertBefore(document.createTextNode(" "), next);
+				}
+			}
+		},
+
+		// Convert to lowercase
+		toLowercase(i) {
+			if (!i.hasAttribute("isname") && !i.id?.startsWith("exran")) {
+				i.textContent = i.textContent.toLowerCase();
+			}
+		},
+
+		// Capitalize start
+		capitalizeStart(i) {
+			const prevEl = i.previousElementSibling;
+			const prevNode = i.previousSibling;
+
+			const getText = (dom) => dom?.textContent?.trim() || "";
+			if (
+				prevEl === null ||
+				prevEl.nodeName === "BR" ||
+				prevEl.nodeName === "HEADER" ||
+				CONFIG.REGEX.ENDS.pattern.test(getText(prevNode))
+			) {
+				if (i.innerHTML) {
+					const txt = i.innerHTML;
+					i.innerHTML = txt[0].toUpperCase() + txt.slice(1);
+				}
+			}
+		},
+
+		// Normalize text
+		normalizeText(node) {
+			if (!node?.nodeValue?.trim()) return;
+			let txt = node.nodeValue.trim();
+
+			if (this.isTextNodeOutsideITag(node)) {
+				const { pattern, replace } = CONFIG.REGEX.REVERSE_TRIM_TEXT;
+				txt = txt.replace(pattern, replace);
+			}
+
+			for (let rule in CONFIG.RULES) {
+				if (CONFIG.RULES.hasOwnProperty(rule)) {
+					const { pattern, replace } = CONFIG.RULES[rule];
+					txt = txt.replace(pattern, replace);
+				}
+			}
+
+			if (txt !== node.nodeValue) node.nodeValue = txt;
+		},
+
+		// Check if text node is outside i tag
+		isTextNodeOutsideITag(textNode) {
+			return textNode.nodeType === Node.TEXT_NODE &&
+				textNode.parentElement.tagName !== 'I';
+		},
+
+		// Sort names
+		sort() {
+			const originalText = this.domCache.nameInput.value.trim();
+			if (!originalText) {
+				console.log("No text found in input field");
+				return;
+			}
+
+			const sortedText = this.sortNames(originalText);
+			this.domCache.nameInput.value = sortedText;
+		},
+
+		// Sort names helper
+		sortNames(text) {
+			// Process and extract items
+			const items = text
+			.split("\n")
+			.filter(line => line.trim() && line.includes("="))
+			.map(line => {
+				const [keyPart, ...valueParts] = line.split("=");
+				const key = keyPart.replace("$", "").trim();
+				const value = valueParts.join("=").trim();
+				return { key, value };
+			});
+
+			// Add stats to items
+			const itemsWithStats = items.map(item => {
+				const chineseCharCount = (
+					item.key.match(
+						/[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\u3300-\u33ff\ufe30-\ufe4f\uf900-\ufaff\U0002f800-\U0002fa1f]/g
+					) || []
+				).length;
+
+				const firstChar = item.value.charAt(0);
+				const isCapitalized =
+					  firstChar === firstChar.toUpperCase() &&
+					  firstChar !== firstChar.toLowerCase();
+
+				return {
+					...item,
+					chineseCharCount,
+					caseType: isCapitalized ? "capitalized" : "lowercase",
+				};
+			});
+
+			// Sort by Chinese character count and value
+			itemsWithStats.sort((a, b) => {
+				if (a.chineseCharCount !== b.chineseCharCount) {
+					return a.chineseCharCount - b.chineseCharCount;
+				}
+				return a.value.localeCompare(b.value);
+			});
+
+			// Group by case type
+			const groupedItems = itemsWithStats.reduce((acc, item) => {
+				acc[item.caseType] = acc[item.caseType] || [];
+				acc[item.caseType].push(item);
+				return acc;
+			}, {});
+
+			// Format output
+			const capitalizedText = (groupedItems.capitalized || [])
+			.map(item => `$${item.key}=${item.value}`)
+			.join("\n");
+
+			const lowercaseText = (groupedItems.lowercase || [])
+			.map(item => `$${item.key}=${item.value}`)
+			.join("\n");
+
+			return (
+				`@CAPITALIZED\n${capitalizedText}\n\n` +
+				`@LOWERCASE\n${lowercaseText}`
+            );
+		}
+	}
+
+	// Initialize the app
+	app.init();
 })();
