@@ -253,10 +253,8 @@
 
 	// Main App
 	const app = {
-		constructor() {
-			this.isHighlighted = true;
-			this.domCache = {};
-		},
+		isHighlighted: true,
+		domCache: {},
 
 		init() {
 			// Inject CSS
@@ -601,7 +599,7 @@
 				`@CAPITALIZED\n${capitalizedText}\n\n` +
 				`@LOWERCASE\n${lowercaseText}`
             );
-		}
+																				}
 	}
 
 	// Initialize the app
