@@ -66,7 +66,15 @@
 			CHINESE_UNICODE: {
 				pattern: /[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\u3300-\u33ff\ufe30-\ufe4f\uf900-\ufaff\U0002f800-\U0002fa1f]/g,
 				replace: null,
-			}
+			},
+			NUMBER_COUNT: {
+				pattern: /(?<!\d)\d{5,}(?!\d)/g,
+				replace: null,
+			},
+			NUMBER_COMMA: {
+				pattern: /\B(?=(\d{3})+(?!\d))/g,
+				replace: ",",
+			},
 		},
 
 		RULES: {
@@ -79,7 +87,7 @@
 				replace: " $&",
 			},
 			CLOSE_SIGNS: {
-				pattern: /[【〘《.,!?;:`”’"'#$^&\])}>|]+/g,
+				pattern: /[【〘《.,!?;:`”’"'#$^&\]}>|]+/g, //)
 				replace: "$& ",
 			},
 			MID_SIGNS: {
@@ -101,10 +109,6 @@
 			SPACE_BEFORE_CLOSE: {
 				pattern: /\s+([)\]}’”'"])/g,
 				replace: "$1",
-			},
-			NUMBER_COMMA: {
-				pattern: /\b\d{1,3}(?=(\d{3})+\b)/g,
-				replace: "$&,",
 			},
 			NUMBER_SPACE: {
 				pattern: /(?<=\d)\s*([,.:])\s*(?=\d)/g,
@@ -464,6 +468,11 @@
 						txt = txt.replace(pattern, replace);
 					}
 				}
+
+				txt.replace(CONFIG.REGEX.NUMBER_COUNT.pattern, s =>
+				    s.replace(CONFIG.REGEX.NUMBER_COMMA.pattern)
+				);
+
 
 				if (txt !== node.nodeValue) node.nodeValue = txt;
 			}
