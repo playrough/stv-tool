@@ -18,7 +18,6 @@
 (function () {
 	"use strict";
 
-	// Configuration object
 	const CONFIG = {
 		DOM: {
 			nameInput: "#namewd",
@@ -64,6 +63,10 @@
 				pattern: /[.;:!?“【〘《]$/,
 				replace: null,
 			},
+			CHINESE_UNICODE: {
+				pattern: /[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\u3300-\u33ff\ufe30-\ufe4f\uf900-\ufaff\U0002f800-\U0002fa1f]/g,
+				replace: null,
+			}
 		},
 
 		RULES: {
@@ -133,7 +136,6 @@
 			MODE_OFF: "🍵 Highlight mode: Off",
 		},
 
-		// Combined CSS for injection
 		CSS: `
             #namewd {
                 padding: 15px;
@@ -206,11 +208,6 @@
                 border-radius: 10px;
             }
 
-            .button-85:hover {
-                transform: scale(1.08);
-                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-            }
-
             .button-85:active {
                 transform: scale(0.95);
             }
@@ -218,10 +215,6 @@
             @media (hover: none) {
                 .button-85:active {
                     transform: scale(0.95);
-                }
-
-                .button-85:focus {
-                    transform: scale(1.08);
                 }
             }
 
@@ -257,10 +250,8 @@
 		domCache: {},
 
 		init() {
-			// Inject CSS
 			GM_addStyle(CONFIG.CSS);
 
-			// Run when DOMLoaded
 			window.addEventListener("DOMContentLoaded", () => {
 				if (document.querySelector(CONFIG.DOM.contentBox + " i")) {
 					setTimeout(() => {
@@ -273,7 +264,6 @@
 			});
 		},
 
-		// Cache DOM elements
 		cacheDOMElements() {
 			this.domCache = {
 				nameInput: document.querySelector(CONFIG.DOM.nameInput),
@@ -282,44 +272,37 @@
 			};
 		},
 
-		// Create UI buttons
 		createUI() {
-			// Create floating buttons
-			this.createButton("fixCleanBtn", "Clean", () => this.format(), 150);
-			this.createButton("copyBtn", "Copy", () => this.copyName(), 85);
-			this.createButton("highlightBtn", "On", () => this.switchHighlight(), 215);
+			createButton("fixCleanBtn", "Clean", () => this.format(), 150);
+			createButton("copyBtn", "Copy", () => this.copyName(), 85);
+			createButton("highlightBtn", "On", () => this.switchHighlight(), 215);
 
-			// Style the settings button
 			if (this.domCache.settingBtn) {
 				this.domCache.settingBtn.classList.add(CONFIG.CLASSNAMES.button85);
 			}
+
+			function createButton(id, text, onClick, bottom) {
+				const btn = document.createElement("button");
+				btn.id = id;
+				btn.className = `${CONFIG.CLASSNAMES.button85} cp-floating-btn`;
+				btn.textContent = text;
+				btn.onclick = onClick;
+				btn.style.bottom = `${bottom}px`;
+
+				document.body.appendChild(btn);
+				return btn;
+			}
 		},
 
-		// Create floating button helper
-		createButton(id, text, onClick, bottom) {
-			const btn = document.createElement("button");
-			btn.id = id;
-			btn.className = `${CONFIG.CLASSNAMES.button85} cp-floating-btn`;
-			btn.textContent = text;
-			btn.onclick = onClick;
-			btn.style.bottom = `${bottom}px`;
-
-			document.body.appendChild(btn);
-			return btn;
-		},
-
-		// Setup auto format triggers
 		setupAutoFormat() {
 			CONFIG.ACTIONS_TO_RELOAD.forEach(action => {
 				const el = document.querySelector(`[onclick="${action}"]`);
 				if (el) {
-					// Use a single event listener with a bound method
 					el.addEventListener("click", this.format.bind(this));
 				}
 			});
 		},
 
-		// Show notification helper
 		showNotify(message, duration = 2000) {
 			const el = document.createElement("div");
 			el.className = `${CONFIG.CLASSNAMES.button85} cp-notifier`;
@@ -327,7 +310,6 @@
 
 			document.body.appendChild(el);
 
-			// Force reflow to ensure transition works
 			void el.offsetWidth;
 
 			el.style.opacity = "1";
@@ -340,7 +322,7 @@
 			}, duration);
 		},
 
-		// Main formatting function
+		// Main formating
 		format() {
 			if (!this.domCache.contentBox) return;
 
@@ -354,26 +336,109 @@
 			this.showNotify(CONFIG.MESSAGES.CLEANED);
 		},
 
-		// Remove empty i tags
 		removeEmptyITags() {
 			this.domCache.contentBox.querySelectorAll("i").forEach(i => {
 				if (!i.textContent.trim()) i.remove();
 			});
 		},
 
-		// Process i tags
 		processITags() {
 			this.domCache.contentBox.querySelectorAll("i").forEach(i => {
-				this.separatorSigns(i);
-				this.formalizeITag(i);
-				this.toLowercase(i);
-				this.capitalizeStart(i);
+				separatorSigns(i);
+				formalizeITag(i);
+				toLowercase(i);
+				capitalizeStart(i);
 
 				if (!i.textContent.trim()) i.remove();
 			});
+
+			function separatorSigns(i) {
+				if (!i.id?.startsWith("exran")) return;
+
+				const parent = i.parentNode;
+				let textContent = i.textContent;
+
+				const startMatch = textContent.match(CONFIG.REGEX.START_SIGNS.pattern);
+				if (startMatch) {
+					const prevSibling = i.previousSibling;
+					const isPrevTextNode = prevSibling?.nodeType === Node.TEXT_NODE;
+					const textStart = startMatch[1];
+
+					if (isPrevTextNode && prevSibling.nodeValue.trim() === "") {
+						parent.replaceChild(document.createTextNode(textStart), prevSibling);
+					} else if (isPrevTextNode) {
+						prevSibling.nodeValue += textStart;
+					} else {
+						i.insertAdjacentText("beforebegin", textStart);
+					}
+					i.textContent = startMatch[2];
+					textContent = startMatch[2];
+				}
+
+				const endMatch = textContent.match(CONFIG.REGEX.END_SIGNS.pattern);
+				if (endMatch) {
+					const nextSibling = i.nextSibling;
+					const isNextTextNode = nextSibling?.nodeType === Node.TEXT_NODE;
+					const textEnd = endMatch[2];
+
+					if (isNextTextNode && nextSibling.nodeValue.trim() === "") {
+						parent.replaceChild(document.createTextNode(textEnd), nextSibling);
+					} else if (isNextTextNode) {
+						nextSibling.nodeValue = textEnd + nextSibling.nodeValue;
+					} else {
+						i.insertAdjacentText("afterend", textEnd);
+					}
+					i.textContent = endMatch[1];
+				}
+
+				if (i.textContent.trim() === "") {
+					parent.removeChild(i);
+				}
+
+			}
+
+			function formalizeITag(i) {
+				if (i) {
+					const prev = i.previousSibling;
+					const next = i.nextSibling;
+
+					i.textContent = i.textContent.trim();
+
+					if (prev && prev.nodeType === 1 && prev.tagName === "I") {
+						i.parentNode.insertBefore(document.createTextNode(" "), i);
+					}
+
+					if (next && next.nodeType === 1 && next.tagName === "I") {
+						i.parentNode.insertBefore(document.createTextNode(" "), next);
+					}
+				}
+			}
+
+			function toLowercase(i) {
+				if (!i.hasAttribute("isname") && !i.id?.startsWith("exran")) {
+					i.textContent = i.textContent.toLowerCase();
+				}
+			}
+
+			function capitalizeStart(i) {
+				const prevEl = i.previousElementSibling;
+				const prevNode = i.previousSibling;
+
+				const getText = (dom) => dom?.textContent?.trim() || "";
+				if (
+					prevEl === null ||
+					prevEl.nodeName === "BR" ||
+					prevEl.nodeName === "HEADER" ||
+					CONFIG.REGEX.ENDS.pattern.test(getText(prevNode))
+				) {
+					if (i.innerHTML) {
+						const txt = i.innerHTML;
+						i.innerHTML = txt[0].toUpperCase() + txt.slice(1);
+					}
+				}
+			}
 		},
 
-		// Process text nodes
 		processTextNodes() {
 			const walker = document.createTreeWalker(
 				this.domCache.contentBox,
@@ -381,18 +446,40 @@
 			);
 
 			while (walker.nextNode()) {
-				this.normalizeText(walker.currentNode);
+				normalizeText(walker.currentNode);
+			}
+
+			function normalizeText(node) {
+				if (!node?.nodeValue?.trim()) return;
+				let txt = node.nodeValue.trim();
+
+				if (isTextNodeOutsideITag(node)) {
+					const { pattern, replace } = CONFIG.REGEX.REVERSE_TRIM_TEXT;
+					txt = txt.replace(pattern, replace);
+				}
+
+				for (let rule in CONFIG.RULES) {
+					if (CONFIG.RULES.hasOwnProperty(rule)) {
+						const { pattern, replace } = CONFIG.RULES[rule];
+						txt = txt.replace(pattern, replace);
+					}
+				}
+
+				if (txt !== node.nodeValue) node.nodeValue = txt;
+			}
+
+			function isTextNodeOutsideITag(textNode) {
+				return textNode.nodeType === Node.TEXT_NODE &&
+					textNode.parentElement.tagName !== 'I';
 			}
 		},
 
-		// Copy name
 		copyName() {
 			navigator.clipboard.writeText(this.domCache.nameInput?.value || "")
 				.then(() => this.showNotify(CONFIG.MESSAGES.COPY_SUCCESS))
 				.catch(() => this.showNotify(CONFIG.MESSAGES.COPY_FAILED));
 		},
 
-		// Switch highlight mode
 		switchHighlight(forceOn = false) {
 			if (forceOn) this.isHighlighted = true;
 
@@ -410,123 +497,6 @@
 			this.showNotify(this.isHighlighted ? CONFIG.MESSAGES.MODE_OFF : CONFIG.MESSAGES.MODE_ON);
 		},
 
-		// Handle separator signs
-		separatorSigns(i) {
-			if (!i.id?.startsWith("exran")) return;
-
-			const parent = i.parentNode;
-			let textContent = i.textContent;
-
-			const startMatch = textContent.match(CONFIG.REGEX.START_SIGNS.pattern);
-			if (startMatch) {
-				const prevSibling = i.previousSibling;
-				const isPrevTextNode = prevSibling?.nodeType === Node.TEXT_NODE;
-				const textStart = startMatch[1];
-
-				if (isPrevTextNode && prevSibling.nodeValue.trim() === "") {
-					parent.replaceChild(document.createTextNode(textStart), prevSibling);
-				} else if (isPrevTextNode) {
-					prevSibling.nodeValue += textStart;
-				} else {
-					i.insertAdjacentText("beforebegin", textStart);
-				}
-				i.textContent = startMatch[2];
-				textContent = startMatch[2];
-			}
-
-			const endMatch = textContent.match(CONFIG.REGEX.END_SIGNS.pattern);
-			if (endMatch) {
-				const nextSibling = i.nextSibling;
-				const isNextTextNode = nextSibling?.nodeType === Node.TEXT_NODE;
-				const textEnd = endMatch[2];
-
-				if (isNextTextNode && nextSibling.nodeValue.trim() === "") {
-					parent.replaceChild(document.createTextNode(textEnd), nextSibling);
-				} else if (isNextTextNode) {
-					nextSibling.nodeValue = textEnd + nextSibling.nodeValue;
-				} else {
-					i.insertAdjacentText("afterend", textEnd);
-				}
-				i.textContent = endMatch[1];
-			}
-
-			if (i.textContent.trim() === "") {
-				parent.removeChild(i);
-			}
-
-		},
-
-		// Formalize i tag
-		formalizeITag(i) {
-			if (i) {
-				const prev = i.previousSibling;
-				const next = i.nextSibling;
-
-				i.textContent = i.textContent.trim();
-
-				if (prev && prev.nodeType === 1 && prev.tagName === "I") {
-					i.parentNode.insertBefore(document.createTextNode(" "), i);
-				}
-
-				if (next && next.nodeType === 1 && next.tagName === "I") {
-					i.parentNode.insertBefore(document.createTextNode(" "), next);
-				}
-			}
-		},
-
-		// Convert to lowercase
-		toLowercase(i) {
-			if (!i.hasAttribute("isname") && !i.id?.startsWith("exran")) {
-				i.textContent = i.textContent.toLowerCase();
-			}
-		},
-
-		// Capitalize start
-		capitalizeStart(i) {
-			const prevEl = i.previousElementSibling;
-			const prevNode = i.previousSibling;
-
-			const getText = (dom) => dom?.textContent?.trim() || "";
-			if (
-				prevEl === null ||
-				prevEl.nodeName === "BR" ||
-				prevEl.nodeName === "HEADER" ||
-				CONFIG.REGEX.ENDS.pattern.test(getText(prevNode))
-			) {
-				if (i.innerHTML) {
-					const txt = i.innerHTML;
-					i.innerHTML = txt[0].toUpperCase() + txt.slice(1);
-				}
-			}
-		},
-
-		// Normalize text
-		normalizeText(node) {
-			if (!node?.nodeValue?.trim()) return;
-			let txt = node.nodeValue.trim();
-
-			if (this.isTextNodeOutsideITag(node)) {
-				const { pattern, replace } = CONFIG.REGEX.REVERSE_TRIM_TEXT;
-				txt = txt.replace(pattern, replace);
-			}
-
-			for (let rule in CONFIG.RULES) {
-				if (CONFIG.RULES.hasOwnProperty(rule)) {
-					const { pattern, replace } = CONFIG.RULES[rule];
-					txt = txt.replace(pattern, replace);
-				}
-			}
-
-			if (txt !== node.nodeValue) node.nodeValue = txt;
-		},
-
-		// Check if text node is outside i tag
-		isTextNodeOutsideITag(textNode) {
-			return textNode.nodeType === Node.TEXT_NODE &&
-				textNode.parentElement.tagName !== 'I';
-		},
-
-		// Sort names
 		sort() {
 			const originalText = this.domCache.nameInput.value.trim();
 			if (!originalText) {
@@ -534,72 +504,64 @@
 				return;
 			}
 
-			const sortedText = this.sortNames(originalText);
+			const sortedText = sortNames(originalText);
 			this.domCache.nameInput.value = sortedText;
-		},
 
-		// Sort names helper
-		sortNames(text) {
-			// Process and extract items
-			const items = text
-			.split("\n")
-			.filter(line => line.trim() && line.includes("="))
-			.map(line => {
-				const [keyPart, ...valueParts] = line.split("=");
-				const key = keyPart.replace("$", "").trim();
-				const value = valueParts.join("=").trim();
-				return { key, value };
-			});
+			function sortNames(text) {
+				const items = text
+				.split("\n")
+				.filter(line => line.trim() && line.includes("="))
+				.map(line => {
+					const [keyPart, ...valueParts] = line.split("=");
+					const key = keyPart.replace("$", "").trim();
+					const value = valueParts.join("=").trim();
+					return { key, value };
+				});
 
-			// Add stats to items
-			const itemsWithStats = items.map(item => {
-				const chineseCharCount = (
-					item.key.match(
-						/[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\u3300-\u33ff\ufe30-\ufe4f\uf900-\ufaff\U0002f800-\U0002fa1f]/g
-					) || []
-				).length;
+				const itemsWithStats = items.map(item => {
+					const chineseCharCount = (
+						item.key.match(CONFIG.REGEX.CHINESE_UNICODE.pattern) || []
+					).length;
 
-				const firstChar = item.value.charAt(0);
-				const isCapitalized =
-					  firstChar === firstChar.toUpperCase() &&
-					  firstChar !== firstChar.toLowerCase();
+					const firstChar = item.value.charAt(0);
+					const isCapitalized =
+						  firstChar === firstChar.toUpperCase() &&
+						  firstChar !== firstChar.toLowerCase();
 
-				return {
-					...item,
-					chineseCharCount,
-					caseType: isCapitalized ? "capitalized" : "lowercase",
-				};
-			});
+					return {
+						...item,
+						chineseCharCount,
+						caseType: isCapitalized ? "capitalized" : "lowercase",
+					};
+				});
 
-			// Sort by Chinese character count and value
-			itemsWithStats.sort((a, b) => {
-				if (a.chineseCharCount !== b.chineseCharCount) {
-					return a.chineseCharCount - b.chineseCharCount;
-				}
-				return a.value.localeCompare(b.value);
-			});
+				itemsWithStats.sort((a, b) => {
+					if (a.chineseCharCount !== b.chineseCharCount) {
+						return a.chineseCharCount - b.chineseCharCount;
+					}
+					return a.value.localeCompare(b.value);
+				});
 
-			// Group by case type
-			const groupedItems = itemsWithStats.reduce((acc, item) => {
-				acc[item.caseType] = acc[item.caseType] || [];
-				acc[item.caseType].push(item);
-				return acc;
-			}, {});
+				const groupedItems = itemsWithStats.reduce((acc, item) => {
+					acc[item.caseType] = acc[item.caseType] || [];
+					acc[item.caseType].push(item);
+					return acc;
+				}, {});
 
-			// Format output
-			const capitalizedText = (groupedItems.capitalized || [])
-			.map(item => `$${item.key}=${item.value}`)
-			.join("\n");
+				const capitalizedText = (groupedItems.capitalized || [])
+				.map(item => `$${item.key}=${item.value}`)
+				.join("\n");
 
-			const lowercaseText = (groupedItems.lowercase || [])
-			.map(item => `$${item.key}=${item.value}`)
-			.join("\n");
+				const lowercaseText = (groupedItems.lowercase || [])
+				.map(item => `$${item.key}=${item.value}`)
+				.join("\n");
 
-			return (
-				`@CAPITALIZED\n${capitalizedText}\n\n` +
-				`@LOWERCASE\n${lowercaseText}`
-            );
-																				}
+				return (
+					`@CAPITALIZED\n${capitalizedText}\n\n` +
+					`@LOWERCASE\n${lowercaseText}`
+				);
+			}
+		}
 	}
 
 	// Initialize the app
