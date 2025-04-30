@@ -30,7 +30,9 @@
 		},
 
 		CLASSNAMES: {
-			button85: "button-85"
+			button85: "button-85",
+			notifier: "cp-notifier",
+			button: "cp-floating-btn"
 		},
 
 		ACTIONS_TO_RELOAD: [
@@ -248,7 +250,6 @@
         `
     };
 
-	// Main App
 	const app = {
 		isHighlighted: true,
 		domCache: {},
@@ -257,15 +258,16 @@
 			GM_addStyle(CONFIG.CSS);
 
 			window.addEventListener("DOMContentLoaded", () => {
-				if (document.querySelector(CONFIG.DOM.contentBox + " i")) {
-					setTimeout(() => {
-						this.cacheDOMElements();
-						this.createUI();
-						this.setupAutoFormat();
-						this.format();
-					}, 2000);
-				}
+				if (!document.querySelector(CONFIG.DOM.contentBox + " i")) return;
+				setTimeout(() => { this.run() }, 2000);
 			});
+		},
+
+		run() {
+			this.cacheDOMElements();
+			this.createUI();
+			this.setupAutoFormat();
+			this.format();
 		},
 
 		cacheDOMElements() {
@@ -281,14 +283,14 @@
 			createButton("copyBtn", "Copy", () => this.copyName(), 85);
 			createButton("highlightBtn", "On", () => this.switchHighlight(), 215);
 
-			if (this.domCache.settingBtn) {
-				this.domCache.settingBtn.classList.add(CONFIG.CLASSNAMES.button85);
-			}
+			if (!this.domCache.settingBtn) return;
+			this.domCache.settingBtn.classList.add(CONFIG.CLASSNAMES.button85);
+
 
 			function createButton(id, text, onClick, bottom) {
 				const btn = document.createElement("button");
 				btn.id = id;
-				btn.className = `${CONFIG.CLASSNAMES.button85} cp-floating-btn`;
+				btn.className = `${CONFIG.CLASSNAMES.button85} ${CONFIG.CLASSNAMES.button}`;
 				btn.textContent = text;
 				btn.onclick = onClick;
 				btn.style.bottom = `${bottom}px`;
@@ -301,15 +303,14 @@
 		setupAutoFormat() {
 			CONFIG.ACTIONS_TO_RELOAD.forEach(action => {
 				const el = document.querySelector(`[onclick="${action}"]`);
-				if (el) {
-					el.addEventListener("click", this.format.bind(this));
-				}
+				if (!el) return;
+				el.addEventListener("click", this.format.bind(this));
 			});
 		},
 
 		showNotify(message, duration = 2000) {
 			const el = document.createElement("div");
-			el.className = `${CONFIG.CLASSNAMES.button85} cp-notifier`;
+			el.className = `${CONFIG.CLASSNAMES.button85} ${CONFIG.CLASSNAMES.notifier}`;
 			el.textContent = message;
 
 			document.body.appendChild(el);
@@ -362,38 +363,8 @@
 				const parent = i.parentNode;
 				let textContent = i.textContent;
 
-				const startMatch = textContent.match(CONFIG.REGEX.START_SIGNS.pattern);
-				if (startMatch) {
-					const prevSibling = i.previousSibling;
-					const isPrevTextNode = prevSibling?.nodeType === Node.TEXT_NODE;
-					const textStart = startMatch[1];
-
-					if (isPrevTextNode && prevSibling.nodeValue.trim() === "") {
-						parent.replaceChild(document.createTextNode(textStart), prevSibling);
-					} else if (isPrevTextNode) {
-						prevSibling.nodeValue += textStart;
-					} else {
-						i.insertAdjacentText("beforebegin", textStart);
-					}
-					i.textContent = startMatch[2];
-					textContent = startMatch[2];
-				}
-
-				const endMatch = textContent.match(CONFIG.REGEX.END_SIGNS.pattern);
-				if (endMatch) {
-					const nextSibling = i.nextSibling;
-					const isNextTextNode = nextSibling?.nodeType === Node.TEXT_NODE;
-					const textEnd = endMatch[2];
-
-					if (isNextTextNode && nextSibling.nodeValue.trim() === "") {
-						parent.replaceChild(document.createTextNode(textEnd), nextSibling);
-					} else if (isNextTextNode) {
-						nextSibling.nodeValue = textEnd + nextSibling.nodeValue;
-					} else {
-						i.insertAdjacentText("afterend", textEnd);
-					}
-					i.textContent = endMatch[1];
-				}
+				textContent = handleStartSign(i, textContent, parent);
+				handleEndSign(i, textContent, parent);
 
 				if (i.textContent.trim() === "") {
 					parent.removeChild(i);
@@ -401,25 +372,84 @@
 
 			}
 
+			function handleStartSign(i, textContent, parent) {
+				const startMatch = textContent.match(CONFIG.REGEX.START_SIGNS.pattern);
+				if (!startMatch) return textContent;
+
+				const prevSibling = i.previousSibling;
+				const isPrevTextNode = prevSibling?.nodeType === Node.TEXT_NODE;
+				const textStart = startMatch[1];
+				const remainingText = startMatch[2];
+
+				if (isPrevTextNode && prevSibling.nodeValue.trim() === "") {
+					parent.replaceChild(document.createTextNode(textStart), prevSibling);
+					i.textContent = remainingText;
+					return remainingText;
+				}
+
+				if (isPrevTextNode) {
+					prevSibling.nodeValue += textStart;
+					i.textContent = remainingText;
+					return remainingText;
+				}
+
+				i.insertAdjacentText("beforebegin", textStart);
+				i.textContent = remainingText;
+				return remainingText;
+			}
+
+			function handleEndSign(i, textContent, parent) {
+				const endMatch = textContent.match(CONFIG.REGEX.END_SIGNS.pattern);
+				if (!endMatch) return textContent;
+
+				const nextSibling = i.nextSibling;
+				const isNextTextNode = nextSibling?.nodeType === Node.TEXT_NODE;
+				const textEnd = endMatch[2];
+				const remainingText = endMatch[1];
+
+				if(isNextTextNode && nextSibling.nodeValue.trim() === ""){
+					parent.replaceChild(document.createTextNode(textEnd), nextSibling);
+					i.textContent = remainingText;
+					return remainingText;
+				}
+
+				if (isNextTextNode){
+					nextSibling.nodeValue = textEnd + nextSibling.nodeValue;
+					i.textContent = remainingText;
+					return remainingText;
+				}
+
+				i.insertAdjacentText("afterend", textEnd);
+				i.textContent = remainingText;
+				return remainingText;
+			}
+
 			function formalizeITag(i) {
-				if (i) {
-					const prev = i.previousSibling;
-					const next = i.nextSibling;
+				if (!i) return;
+				const prev = i.previousSibling;
+				const next = i.nextSibling;
 
-					i.textContent = i.textContent.trim();
+				i.textContent = i.textContent.trim();
 
-					if (prev && prev.nodeType === 1 && prev.tagName === "I") {
-						i.parentNode.insertBefore(document.createTextNode(" "), i);
-					}
+				if (prev && prev.nodeType === 1 && prev.tagName === "I") {
+					i.parentNode.insertBefore(document.createTextNode(" "), i);
+				}
 
-					if (next && next.nodeType === 1 && next.tagName === "I") {
-						i.parentNode.insertBefore(document.createTextNode(" "), next);
-					}
+				if (next && next.nodeType === 1 && next.tagName === "I") {
+					i.parentNode.insertBefore(document.createTextNode(" "), next);
 				}
 			}
 
 			function toLowercase(i) {
-				if (!i.hasAttribute("isname") && !i.id?.startsWith("exran")) {
+				const ATTRIBUTE_I_TAG_IS_NAME = "isname";
+				const ID_I_TAG_IS_EXTRA = "exran";
+
+				const shouldLowercase = (
+					!i.hasAttribute(ATTRIBUTE_I_TAG_IS_NAME) &&
+					!i.id?.startsWith(ID_I_TAG_IS_EXTRA)
+				)
+
+				if (shouldLowercase) {
 					i.textContent = i.textContent.toLowerCase();
 				}
 			}
@@ -429,17 +459,18 @@
 				const prevNode = i.previousSibling;
 
 				const getText = (dom) => dom?.textContent?.trim() || "";
-				if (
+
+				const shouldCapitalize = (
 					prevEl === null ||
 					prevEl.nodeName === "BR" ||
 					prevEl.nodeName === "HEADER" ||
 					CONFIG.REGEX.ENDS.pattern.test(getText(prevNode))
-				) {
-					if (i.innerHTML) {
-						const txt = i.innerHTML;
-						i.innerHTML = txt[0].toUpperCase() + txt.slice(1);
-					}
-				}
+				)
+
+				if (!shouldCapitalize || !i.innerHTML) return;
+
+				const txt = i.innerHTML;
+				i.innerHTML = txt[0].toUpperCase() + txt.slice(1);
 			}
 		},
 
@@ -455,26 +486,28 @@
 
 			function normalizeText(node) {
 				if (!node?.nodeValue?.trim()) return;
+
 				let txt = node.nodeValue.trim();
+				const originalText = node.nodeValue;
 
 				if (isTextNodeOutsideITag(node)) {
 					const { pattern, replace } = CONFIG.REGEX.REVERSE_TRIM_TEXT;
 					txt = txt.replace(pattern, replace);
 				}
 
-				for (let rule in CONFIG.RULES) {
-					if (CONFIG.RULES.hasOwnProperty(rule)) {
-						const { pattern, replace } = CONFIG.RULES[rule];
-						txt = txt.replace(pattern, replace);
-					}
-				}
+				Object.keys(CONFIG.RULES).forEach(rule => {
+					const { pattern, replace } = CONFIG.RULES[rule];
+					txt = txt.replace(pattern, replace);
+				});
 
-				txt.replace(CONFIG.REGEX.NUMBER_COUNT.pattern, s =>
-				    s.replace(CONFIG.REGEX.NUMBER_COMMA.pattern)
+				txt = txt.replace(
+					CONFIG.REGEX.NUMBER_COUNT.pattern,
+					s => s.replace(CONFIG.REGEX.NUMBER_COMMA.pattern, '')
 				);
 
-
-				if (txt !== node.nodeValue) node.nodeValue = txt;
+				if (txt !== originalText) {
+					node.nodeValue = txt;
+				}
 			}
 
 			function isTextNodeOutsideITag(textNode) {
@@ -495,11 +528,11 @@
 			const btn = document.querySelector(CONFIG.DOM.highlightBtn);
 			if (btn) btn.textContent = this.isHighlighted ? "Off" : "On";
 
-			this.domCache.contentBox.querySelectorAll("i").forEach(i => {
-				if (i.getAttribute("isname")) {
-					i.style.color = this.isHighlighted ? "var(--danger)" : "";
-					i.style.fontWeight = this.isHighlighted ? "bold" : "normal";
-				}
+			const COLOR_DANGER = "var(--danger)";
+
+			this.domCache.contentBox.querySelectorAll("i[isname]").forEach(i => {
+				i.style.color = this.isHighlighted ? COLOR_DANGER : "";
+				i.style.fontWeight = this.isHighlighted ? "bold" : "normal";
 			});
 
 			this.isHighlighted = !this.isHighlighted;
@@ -573,6 +606,5 @@
 		}
 	}
 
-	// Initialize the app
 	app.init();
 })();
