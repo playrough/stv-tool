@@ -35,6 +35,11 @@
 			button: "cp-floating-btn"
 		},
 
+		ATTRIBUTES: {
+			IS_NAME: "isname",
+			EXTRA_ID_PREFIX: "exran"
+		},
+
 		ACTIONS_TO_RELOAD: [
 			"addSuperName('hv','z')",
 			"addSuperName('hv','f')",
@@ -327,7 +332,6 @@
 			}, duration);
 		},
 
-		// Main formating
 		format() {
 			if (!this.domCache.contentBox) return;
 
@@ -441,12 +445,9 @@
 			}
 
 			function toLowercase(i) {
-				const ATTRIBUTE_I_TAG_IS_NAME = "isname";
-				const ID_I_TAG_IS_EXTRA = "exran";
-
 				const shouldLowercase = (
-					!i.hasAttribute(ATTRIBUTE_I_TAG_IS_NAME) &&
-					!i.id?.startsWith(ID_I_TAG_IS_EXTRA)
+					!i.hasAttribute(CONFIG.ATTRIBUTES.IS_NAME) &&
+					!i.id?.startsWith(CONFIG.ATTRIBUTES.EXTRA_ID_PREFIX)
 				)
 
 				if (shouldLowercase) {
@@ -529,8 +530,9 @@
 			if (btn) btn.textContent = this.isHighlighted ? "Off" : "On";
 
 			const COLOR_DANGER = "var(--danger)";
+			const I_NAME = "i[" + CONFIG.ATTRIBUTES.IS_NAME + "]";
 
-			this.domCache.contentBox.querySelectorAll("i[isname]").forEach(i => {
+			this.domCache.contentBox.querySelectorAll(I_NAME).forEach(i => {
 				i.style.color = this.isHighlighted ? COLOR_DANGER : "";
 				i.style.fontWeight = this.isHighlighted ? "bold" : "normal";
 			});
